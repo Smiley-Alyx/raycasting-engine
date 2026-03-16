@@ -11,7 +11,11 @@ var rayc = function() {
   previousTime = currentTime; //при обновлении время текущего кадра становится предыдущим
   lag += elapsedTime; //суммируем лаги
 
-  processInput(); //запуск движения
+  // deltaTime в секундах. Дальше используем коэффициент (dt * 60),
+  // чтобы сохранить ощущение скорости как раньше при 60 FPS.
+  var dt = elapsedTime / 1000;
+
+  processInput(dt); //запуск движения
 
   //следующий код является по идее костылём от лагов, но он недопилен
   while (lag >= MS_PER_UPDATE) { //пока лагов больше чем фпс(то есть пока тормозит)
@@ -86,15 +90,19 @@ function bindKeys(){
   });
 }
 
-function processInput(){
+function processInput(dt){
   // Считываем состояние управления из keysDown и заполняем поля player,
   // чтобы остальная логика движения оставалась прежней.
   player.mov = (keysDown['KeyW'] || keysDown['ArrowUp']) ? 1 : ((keysDown['KeyS'] || keysDown['ArrowDown']) ? -1 : 0);
   player.dir = (keysDown['KeyA'] || keysDown['ArrowLeft']) ? 1 : ((keysDown['KeyD'] || keysDown['ArrowRight']) ? -1 : 0);
   player.sprint = keysDown['ShiftLeft'] || keysDown['ShiftRight'] ? 1 : 0;
 
-  var step = player.mov * player.speed * (player.sprint +1) * player.sprintFactor; //шаг вперёд или назад
-  var rotStep = player.dir * player.rotSpeed; //поворот при шаге
+  // Масштабируем движение/поворот по времени, чтобы скорость не зависела от FPS.
+  // При 60 FPS коэффициент примерно равен 1 (dt ~ 1/60).
+  var timeScale = dt * 60;
+
+  var step = player.mov * player.speed * (player.sprint +1) * player.sprintFactor * timeScale; //шаг вперёд или назад
+  var rotStep = player.dir * player.rotSpeed * timeScale; //поворот при шаге
   
   player.rot = addRotToAngle(rotStep, player.rot); //И получаем направление куда направлена камера
 
