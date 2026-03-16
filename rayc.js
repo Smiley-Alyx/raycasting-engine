@@ -83,6 +83,18 @@ var player={
     flatmap : 0,
   };  
 
+var textures = {
+  1: document.getElementById('wall'),
+  2: document.getElementById('window'),
+  3: document.getElementById('door'),
+  4: document.getElementById('stand1'),
+  5: document.getElementById('stand2'),
+  6: document.getElementById('stand3'),
+  7: document.getElementById('stand4'),
+  8: document.getElementById('GStand1'),
+  9: document.getElementById('GStand2'),
+};
+
 function bindKeys(){
   document.onkeydown = function(e){
     e = e || window.event;
@@ -262,23 +274,23 @@ function drawRay(dist, x, offset, img) {   //отрисовываем то чт�
   var sliceHeight = 1 / dist * distanceProjectionPlane; //Высота данной текстуры
   //выбор текстур
   switch(img){
-    case 1: ctx.drawImage(document.getElementById('wall'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+    case 1: ctx.drawImage(textures[1], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break; //рисуем текстуру с учётом всех наклонов
-	case 2: ctx.drawImage(document.getElementById('window'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 2: ctx.drawImage(textures[2], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 3: ctx.drawImage(document.getElementById('door'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 3: ctx.drawImage(textures[3], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 4: ctx.drawImage(document.getElementById('stand1'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 4: ctx.drawImage(textures[4], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 5: ctx.drawImage(document.getElementById('stand2'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 5: ctx.drawImage(textures[5], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 6: ctx.drawImage(document.getElementById('stand3'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 6: ctx.drawImage(textures[6], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 7: ctx.drawImage(document.getElementById('stand4'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 7: ctx.drawImage(textures[7], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 8: ctx.drawImage(document.getElementById('GStand1'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 8: ctx.drawImage(textures[8], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 9: ctx.drawImage(document.getElementById('GStand2'), offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 9: ctx.drawImage(textures[9], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
       break;
   }
 
