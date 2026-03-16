@@ -1,6 +1,16 @@
 // Карта уровня подключается отдельным файлом (map.js) и лежит в window.map
 var map = window.map;
 
+// Логические размеры канваса (в CSS-пикселях). При HiDPI canvas.width/height
+// могут быть больше, поэтому движок должен опираться на "логический" размер.
+function getViewWidth(){
+  return (typeof window.canvasCssWidth === 'number') ? window.canvasCssWidth : canvas.width;
+}
+
+function getViewHeight(){
+  return (typeof window.canvasCssHeight === 'number') ? window.canvasCssHeight : canvas.height;
+}
+
 var previousTime = Date.now(); //фремя предыдущего кадра
 var lag = 0.0; //задержка между временем
 var MS_PER_UPDATE = 1000 / 60; //фпс
@@ -146,18 +156,22 @@ function render(){ //Рендеринг состоит из трёх шагов:
 }
 
 function drawBackground(){  
-  ctx.clearRect(0, 0, canvas.width, canvas.height); //потолок 
+  var w = getViewWidth();
+  var h = getViewHeight();
+
+  ctx.clearRect(0, 0, w, h); //потолок 
   ctx.fillStyle = '#E3E3E1'; //цвет извести
-  ctx.fillRect(0, 0, canvas.width, canvas.height /2); //пол
+  ctx.fillRect(0, 0, w, h /2); //пол
   ctx.fillStyle = '#858585'; //Цвет линолеума 
-  ctx.fillRect(0, canvas.height /2, canvas.width, canvas.height /2); //поправка на углы
+  ctx.fillRect(0, h /2, w, h /2); //поправка на углы
 }
 
 function castRays() { //самая главная функция во всём движке - бросание лучей
-  var angleBetweenRays = ((player.fov*180/Math.PI) / canvas.width)*Math.PI /180; //делим угол обзора на маленьки кусочки - углы куда будут бросаться лучи
+  var viewWidth = getViewWidth();
+  var angleBetweenRays = ((player.fov*180/Math.PI) / viewWidth)*Math.PI /180; //делим угол обзора на маленьки кусочки - углы куда будут бросаться лучи
   var dist;   //переменная расстояния до препятствия
   var angle = addRotToAngle(player.fov /2, player.rot); //(pos+dir+plane)
-  for (var i = 0; i < canvas.width;i++){
+  for (var i = 0; i < viewWidth;i++){
     castSingleRay(angle, i); //Бросаем по одному лучу на каждый кусочек экрана
     angle = addRotToAngle(-angleBetweenRays, angle);//и переходим на следующий кусочек
   }
@@ -225,27 +239,29 @@ function castSingleRay(angle, row) { //бросание лучей по одно
 }
 
 function drawRay(dist, x, offset, img) {   //отрисовываем то что получилось 
-  var distanceProjectionPlane = (canvas.width /2) / Math.tan((player.fov /2)); //расстояние до плоскости проекции(читать "до экрана")
+  var viewWidth = getViewWidth();
+  var viewHeight = getViewHeight();
+  var distanceProjectionPlane = (viewWidth /2) / Math.tan((player.fov /2)); //расстояние до плоскости проекции(читать "до экрана")
   var sliceHeight = 1 / dist * distanceProjectionPlane; //Высота данной текстуры
   //выбор текстур
   switch(img){
-    case 1: ctx.drawImage(textures[1], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+    case 1: ctx.drawImage(textures[1], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break; //рисуем текстуру с учётом всех наклонов
-	case 2: ctx.drawImage(textures[2], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 2: ctx.drawImage(textures[2], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 3: ctx.drawImage(textures[3], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 3: ctx.drawImage(textures[3], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 4: ctx.drawImage(textures[4], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 4: ctx.drawImage(textures[4], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 5: ctx.drawImage(textures[5], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 5: ctx.drawImage(textures[5], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 6: ctx.drawImage(textures[6], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 6: ctx.drawImage(textures[6], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 7: ctx.drawImage(textures[7], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 7: ctx.drawImage(textures[7], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 8: ctx.drawImage(textures[8], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 8: ctx.drawImage(textures[8], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
-	case 9: ctx.drawImage(textures[9], offset*511, 0, 1, 512, x, (canvas.height /2) - (sliceHeight /2), 1, sliceHeight);
+	case 9: ctx.drawImage(textures[9], offset*511, 0, 1, 512, x, (viewHeight /2) - (sliceHeight /2), 1, sliceHeight);
       break;
   }
 
