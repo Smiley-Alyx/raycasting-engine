@@ -1,0 +1,16 @@
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Node / bundlers (for future Vite migration)
+node_modules/
+dist/
+.vite/
+
+# Coverage
+coverage/
