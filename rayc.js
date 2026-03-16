@@ -95,52 +95,46 @@ var textures = {
   9: document.getElementById('GStand2'),
 };
 
+// Состояние нажатых клавиш. Ключи — e.code (KeyW, ArrowUp, ShiftLeft и т.д.)
+var keysDown = Object.create(null);
+
 function bindKeys(){
-  document.onkeydown = function(e){
-    e = e || window.event;
-    switch(e.keyCode){
-      case 65: //A
-      case 37: player.dir = 1;//стрелка влево
-        break;
-      case 87: //W
-      case 38: player.mov = 1; //стрелка вверх
-        break;
-      case 68: //D
-      case 39: player.dir = -1;//стрелка вправо
-        break;
-      case 83: //S
-      case 40: player.mov = -1;//стрелка вниз
-        break;
-      case 16: player.sprint = 1; //Shift
-      break;
-      case 77: player.flatmap = (player.flatmap) ? 0 : 1;
-      break;//Прикольная фича для показывания плоской карты
+  // Переходим на addEventListener вместо document.onkeydown/onkeyup,
+  // чтобы не перетирать обработчики и проще расширять управление.
+  window.addEventListener('keydown', function(e){
+    // Стрелки не должны скроллить страницу во время игры
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+      e.preventDefault();
     }
-    
-  };
-  document.onkeyup = function(e){
-    e = e || window.event;
-    switch(e.keyCode){
-      case 65: //A
-      case 37: //стрелка влево
-      case 68: //D
-      case 39: //стрелка вправо
-        player.dir = 0;
-        break;
-      case 87: //W
-      case 38: //стрелка вверх
-      case 83: //S
-      case 40: //стрелка вниз
-        player.mov = 0;
-        break;  
-      case 16: //Shift
-        player.sprint = 0; 
-        break;
+
+    if (!e.repeat) {
+      if (e.code === 'KeyM') {
+        // Переключаем миникарту только по первому нажатию (не спамим при удержании)
+        player.flatmap = (player.flatmap) ? 0 : 1;
+      }
     }
-  };
+
+    // Запоминаем, что клавиша нажата
+    keysDown[e.code] = true;
+  });
+
+  window.addEventListener('keyup', function(e){
+    if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+      e.preventDefault();
+    }
+
+    // Запоминаем, что клавиша отпущена
+    keysDown[e.code] = false;
+  });
 }
 
 function processInput(){
+  // Считываем состояние управления из keysDown и заполняем поля player,
+  // чтобы остальная логика движения оставалась прежней.
+  player.mov = (keysDown['KeyW'] || keysDown['ArrowUp']) ? 1 : ((keysDown['KeyS'] || keysDown['ArrowDown']) ? -1 : 0);
+  player.dir = (keysDown['KeyA'] || keysDown['ArrowLeft']) ? 1 : ((keysDown['KeyD'] || keysDown['ArrowRight']) ? -1 : 0);
+  player.sprint = keysDown['ShiftLeft'] || keysDown['ShiftRight'] ? 1 : 0;
+
   var step = player.mov * player.speed * (player.sprint +1) * player.sprintFactor; //шаг вперёд или назад
   var rotStep = player.dir * player.rotSpeed; //поворот при шаге
   
