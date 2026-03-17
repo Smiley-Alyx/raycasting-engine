@@ -1,5 +1,5 @@
 import { getTextureForMaterial } from './materials.js';
-import { getMap } from './map-state.js';
+import { getMap } from '../state/map-state.js';
 
 export function createRenderer({ ctx, getViewWidth, getViewHeight, player }) {
   function drawBackground() {

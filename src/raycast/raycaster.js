@@ -1,4 +1,4 @@
-import { getCellMaterial, getMap, hitWall } from './map-state.js';
+import { getCellMaterial, getMap, hitWall } from '../state/map-state.js';
 
 export function castRays({ player, getViewWidth, addRotToAngle, drawRay }) {
   const map = getMap();

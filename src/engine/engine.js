@@ -1,7 +1,7 @@
-import { createInput } from './input.js';
-import { hitWall as hitWallState } from './map-state.js';
-import { castRays } from './raycaster.js';
-import { createRenderer } from './renderer.js';
+import { createInput } from '../input/input.js';
+import { hitWall as hitWallState } from '../state/map-state.js';
+import { castRays } from '../raycast/raycaster.js';
+import { createRenderer } from '../render/renderer.js';
 
 export function createEngine({ ctx, getViewWidth, getViewHeight }) {
   let started = false;

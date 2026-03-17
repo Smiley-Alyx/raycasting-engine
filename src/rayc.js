@@ -1,8 +1,8 @@
 import {
   setLegend as setLegendState,
   setMap as setMapState,
-} from './map-state.js';
-import { createEngine } from './engine.js';
+} from './state/map-state.js';
+import { createEngine } from './engine/engine.js';
 
 const canvas = window.canvas;
 const ctx = window.ctx;
