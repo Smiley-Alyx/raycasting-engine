@@ -6,6 +6,7 @@ import {
   setLegend as setLegendState,
   setMap as setMapState,
 } from './map-state.js';
+import { getTextureForMaterial } from './materials.js';
 
 var pendingSpawn = null;
 
@@ -90,31 +91,6 @@ if (pendingSpawn) {
   setSpawn(pendingSpawn);
   pendingSpawn = null;
 }
-
-var textures = {
-  1: document.getElementById('wall'),
-  2: document.getElementById('window'),
-  3: document.getElementById('door'),
-  4: document.getElementById('stand1'),
-  5: document.getElementById('stand2'),
-  6: document.getElementById('stand3'),
-  7: document.getElementById('stand4'),
-  8: document.getElementById('GStand1'),
-  9: document.getElementById('GStand2'),
-};
-
-var materialTextures = {
-  wall: textures[1],
-  brick: textures[1],
-  window: textures[2],
-  door: textures[3],
-  stand1: textures[4],
-  stand2: textures[5],
-  stand3: textures[6],
-  stand4: textures[7],
-  gstand1: textures[8],
-  gstand2: textures[9],
-};
 
 var input = createInput({
   onToggleMap: function () {
@@ -284,7 +260,7 @@ function drawRay(dist, x, offset, img) {   //отрисовываем то чт�
   var distanceProjectionPlane = (viewWidth /2) / Math.tan((player.fov /2)); //расстояние до плоскости проекции(читать "до экрана")
   var sliceHeight = 1 / dist * distanceProjectionPlane; //Высота данной текстуры
 
-  var texture = (typeof img === 'string') ? materialTextures[img] : textures[img];
+  var texture = getTextureForMaterial(img);
   if (!texture) return;
   // Берём целую колонку из текстуры, чтобы избежать размазывания (интерполяции).
   var texX = Math.floor(offset * 512);
