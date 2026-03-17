@@ -1,5 +1,5 @@
-var map = window.map;
-var cellLegend = {};
+let map = window.map;
+let cellLegend = {};
 
 export function setMap(newMap) {
   map = newMap;
@@ -27,6 +27,6 @@ export function hitWall(x, y) {
 }
 
 export function getCellMaterial(xMap, yMap) {
-  var cellId = map[yMap][xMap];
+  const cellId = map[yMap][xMap];
   return cellLegend[String(cellId)] || cellId;
 }
