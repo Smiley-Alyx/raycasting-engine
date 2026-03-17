@@ -57,7 +57,7 @@
   const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
-        await host.requestFullscreen();
+        await document.documentElement.requestFullscreen();
       } else {
         await document.exitFullscreen();
       }

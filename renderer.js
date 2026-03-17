@@ -33,7 +33,8 @@ export function createRenderer({ ctx, getViewWidth, getViewHeight, player }) {
     const map = getMap();
     if (!map) return;
 
-    ctx.clearRect(0, 0, map[0].length * 5, map.length * 5);
+    ctx.fillStyle = 'rgb(255, 255, 255)';
+    ctx.fillRect(0, 0, map[0].length * 5, map.length * 5);
     ctx.fillStyle = 'rgb(255, 0, 0)';
     ctx.fillRect(player.x * 5 - 1, player.y * 5 - 1, 2, 2);
 
