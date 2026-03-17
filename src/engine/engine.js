@@ -1,5 +1,9 @@
 import { createInput } from '../input/input.js';
-import { hitWall as hitWallState } from '../state/map-state.js';
+import {
+  hitWall as hitWallState,
+  setLegend as setLegendState,
+  setMap as setMapState,
+} from '../state/map-state.js';
 import { castRays } from '../raycast/raycaster.js';
 import { createRenderer } from '../render/renderer.js';
 
@@ -38,6 +42,14 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
     if (typeof spawn.x === 'number') player.x = spawn.x;
     if (typeof spawn.y === 'number') player.y = spawn.y;
     if (typeof spawn.rot === 'number') player.rot = spawn.rot;
+  }
+
+  function setMap(newMap) {
+    setMapState(newMap);
+  }
+
+  function setLegend(newLegend) {
+    setLegendState(newLegend);
   }
 
   function processInput(dt) {
@@ -134,6 +146,8 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
     start,
     stop,
     dispose,
+    setMap,
+    setLegend,
     setSpawn,
     player,
   };

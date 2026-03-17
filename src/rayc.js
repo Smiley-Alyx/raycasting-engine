@@ -1,25 +1,19 @@
-import { setLegend as setLegendState, setMap as setMapState } from './state/map-state.js';
 import { createEngine } from './engine/engine.js';
 import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from './canvas-init.js';
 
-let pendingSpawn = null;
 let engine = null;
 
 export function setMap(newMap) {
-  setMapState(newMap);
+  ensureEngine().setMap(newMap);
 }
 
 export function setSpawn(spawn) {
   if (!spawn || typeof spawn !== 'object') return;
-  if (!engine) {
-    pendingSpawn = spawn;
-    return;
-  }
-  engine.setSpawn(spawn);
+  ensureEngine().setSpawn(spawn);
 }
 
 export function setLegend(newLegend) {
-  setLegendState(newLegend);
+  ensureEngine().setLegend(newLegend);
 }
 
 // Логические размеры канваса (в CSS-пикселях). При HiDPI canvas.width/height
@@ -45,11 +39,6 @@ function ensureEngine() {
     throw new Error('Canvas context is not initialized. Did you import canvas-init.js first?');
   }
   engine = createEngine({ ctx, getViewWidth, getViewHeight });
-  if (pendingSpawn) {
-    const spawn = pendingSpawn;
-    pendingSpawn = null;
-    engine.setSpawn(spawn);
-  }
   return engine;
 }
 
@@ -66,5 +55,4 @@ export function disposeRayc() {
   if (!engine) return;
   engine.dispose();
   engine = null;
-  pendingSpawn = null;
 }
