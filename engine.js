@@ -5,6 +5,7 @@ import { createRenderer } from './renderer.js';
 
 export function createEngine({ ctx, getViewWidth, getViewHeight }) {
   let started = false;
+  let rafId = null;
 
   const player = {
     x: 46,
@@ -96,18 +97,33 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
 
     render(lag / MS_PER_UPDATE);
 
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
   }
 
   function start() {
     if (started) return;
     started = true;
     input.bind();
-    requestAnimationFrame(tick);
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    started = false;
+  }
+
+  function dispose() {
+    stop();
+    input.unbind();
   }
 
   return {
     start,
+    stop,
+    dispose,
     setSpawn,
     player,
   };
