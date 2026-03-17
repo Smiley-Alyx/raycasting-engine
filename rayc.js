@@ -7,8 +7,8 @@ import { createEngine } from './engine.js';
 const canvas = window.canvas;
 const ctx = window.ctx;
 
-var pendingSpawn = null;
-var engine = null;
+let pendingSpawn = null;
+let engine = null;
 
 export function setMap(newMap){
   setMapState(newMap);
@@ -45,8 +45,9 @@ function ensureEngine(){
   if (engine) return engine;
   engine = createEngine({ ctx, getViewWidth, getViewHeight });
   if (pendingSpawn) {
-    engine.setSpawn(pendingSpawn);
+    const spawn = pendingSpawn;
     pendingSpawn = null;
+    engine.setSpawn(spawn);
   }
   return engine;
 }
