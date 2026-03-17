@@ -1,5 +1,5 @@
 import './canvas-init.js';
 import './map.js';
-import './rayc.js';
+import { startRayc } from './rayc.js';
 
-window.startRayc();
+startRayc();
