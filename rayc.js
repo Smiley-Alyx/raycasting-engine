@@ -1,6 +1,27 @@
 // Карта уровня подключается отдельным файлом (map.js) и лежит в window.map
 var map = window.map;
 
+var pendingSpawn = null;
+
+export function setMap(newMap){
+  map = newMap;
+  window.map = newMap;
+}
+
+export function setSpawn(spawn){
+  if (!spawn || typeof spawn !== 'object') return;
+  if (typeof player === 'undefined') {
+    pendingSpawn = spawn;
+    return;
+  }
+  if (typeof spawn.x === 'number') player.x = spawn.x;
+  if (typeof spawn.y === 'number') player.y = spawn.y;
+  if (typeof spawn.rot === 'number') player.rot = spawn.rot;
+}
+
+window.setMap = setMap;
+window.setSpawn = setSpawn;
+
 // Логические размеры канваса (в CSS-пикселях). При HiDPI canvas.width/height
 // могут быть больше, поэтому движок должен опираться на "логический" размер.
 function getViewWidth(){
@@ -54,6 +75,11 @@ var player={
     fov : 60 * Math.PI / 180, //Угол обзора(тут косяк с фишаем)
     flatmap : 0,
   };  
+
+if (pendingSpawn) {
+  setSpawn(pendingSpawn);
+  pendingSpawn = null;
+}
 
 var textures = {
   1: document.getElementById('wall'),

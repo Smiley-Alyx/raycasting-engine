@@ -1,0 +1,10 @@
+{
+  "default": "level1",
+  "levels": [
+    {
+      "id": "level1",
+      "name": "Level 1",
+      "file": "/levels/level1.json"
+    }
+  ]
+}
