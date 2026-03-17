@@ -53,8 +53,6 @@ function ensureEngine(){
 }
 
 export function startRayc(){
-  if (window.__raycStarted) return;
-  window.__raycStarted = true;
   ensureEngine().start();
 }
 
