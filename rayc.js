@@ -56,4 +56,18 @@ export function startRayc(){
   ensureEngine().start();
 }
 
+export function stopRayc(){
+  if (!engine) return;
+  engine.stop();
+}
+
+export function disposeRayc(){
+  if (!engine) return;
+  engine.dispose();
+  engine = null;
+  pendingSpawn = null;
+}
+
 window.startRayc = startRayc;
+window.stopRayc = stopRayc;
+window.disposeRayc = disposeRayc;
