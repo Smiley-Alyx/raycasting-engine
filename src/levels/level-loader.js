@@ -1,4 +1,4 @@
-export async function loadLevel(levelUrl){
+export async function loadLevel(levelUrl) {
   const res = await fetch(levelUrl);
   if (!res.ok) {
     throw new Error('Failed to load level: ' + levelUrl);
@@ -45,7 +45,7 @@ export async function loadLevel(levelUrl){
   };
 }
 
-export async function loadLevelsIndex(indexUrl){
+export async function loadLevelsIndex(indexUrl) {
   const res = await fetch(indexUrl);
   if (!res.ok) {
     throw new Error('Failed to load levels index: ' + indexUrl);

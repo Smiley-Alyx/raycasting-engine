@@ -1,20 +1,21 @@
 body {
-    background-image: url(images/1_camp.jpg); /* Путь к фоновому изображению */
-    background-color: #c7b39b; /* Цвет фона */
-    background-size: contain;
+  background-image: url(images/1_camp.jpg); /* Путь к фоновому изображению */
+  background-color: #c7b39b; /* Цвет фона */
+  background-size: contain;
 }
 table {
-    width: 100%; /* Ширина таблицы */
-    background-color: rgba(0, 120, 201, 0.7); /* Цвет фона таблицы */
-    color: white; /* Цвет текста */
-    border-spacing: 1px; /* Расстояние между ячейками */
-   }
-   td, th {
-    background: white; /* Цвет фона ячеек */
-    padding: 5px; /* Поля вокруг текста */
-   }
+  width: 100%; /* Ширина таблицы */
+  background-color: rgba(0, 120, 201, 0.7); /* Цвет фона таблицы */
+  color: white; /* Цвет текста */
+  border-spacing: 1px; /* Расстояние между ячейками */
+}
+td,
+th {
+  background: white; /* Цвет фона ячеек */
+  padding: 5px; /* Поля вокруг текста */
+}
 div {
-    font-family:'Arial';
-    color: black;
-    font-size: 20px;
+  font-family: 'Arial';
+  color: black;
+  font-size: 20px;
 }

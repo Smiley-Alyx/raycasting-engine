@@ -1,7 +1,4 @@
-import {
-  setLegend as setLegendState,
-  setMap as setMapState,
-} from './state/map-state.js';
+import { setLegend as setLegendState, setMap as setMapState } from './state/map-state.js';
 import { createEngine } from './engine/engine.js';
 
 const canvas = window.canvas;
@@ -10,11 +7,11 @@ const ctx = window.ctx;
 let pendingSpawn = null;
 let engine = null;
 
-export function setMap(newMap){
+export function setMap(newMap) {
   setMapState(newMap);
 }
 
-export function setSpawn(spawn){
+export function setSpawn(spawn) {
   if (!spawn || typeof spawn !== 'object') return;
   if (!engine) {
     pendingSpawn = spawn;
@@ -23,7 +20,7 @@ export function setSpawn(spawn){
   engine.setSpawn(spawn);
 }
 
-export function setLegend(newLegend){
+export function setLegend(newLegend) {
   setLegendState(newLegend);
 }
 
@@ -33,15 +30,15 @@ window.setLegend = setLegend;
 
 // Логические размеры канваса (в CSS-пикселях). При HiDPI canvas.width/height
 // могут быть больше, поэтому движок должен опираться на "логический" размер.
-function getViewWidth(){
-  return (typeof window.canvasCssWidth === 'number') ? window.canvasCssWidth : canvas.width;
+function getViewWidth() {
+  return typeof window.canvasCssWidth === 'number' ? window.canvasCssWidth : canvas.width;
 }
 
-function getViewHeight(){
-  return (typeof window.canvasCssHeight === 'number') ? window.canvasCssHeight : canvas.height;
+function getViewHeight() {
+  return typeof window.canvasCssHeight === 'number' ? window.canvasCssHeight : canvas.height;
 }
 
-function ensureEngine(){
+function ensureEngine() {
   if (engine) return engine;
   engine = createEngine({ ctx, getViewWidth, getViewHeight });
   if (pendingSpawn) {
@@ -52,16 +49,16 @@ function ensureEngine(){
   return engine;
 }
 
-export function startRayc(){
+export function startRayc() {
   ensureEngine().start();
 }
 
-export function stopRayc(){
+export function stopRayc() {
   if (!engine) return;
   engine.stop();
 }
 
-export function disposeRayc(){
+export function disposeRayc() {
   if (!engine) return;
   engine.dispose();
   engine = null;

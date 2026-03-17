@@ -1,40 +1,41 @@
-<!DOCTYPE HTML>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <meta charset="utf-8" />
     <title>Рейкастовый движок</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <link rel="shortcut icon" href="logo.png" type="image/x-icon">
-</head>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="shortcut icon" href="logo.png" type="image/x-icon" />
+  </head>
 
-<body>
-    <div style="display:flex; align-items:flex-start; gap:16px; width:100%;">
-        <main id="canvas1" style="flex:1; min-width:0;">
-            <div style="display:none;">
-                <img id="wall" src="images/wall.jpg">
-                <img id="door" src="images/door.jpg">
-                <img id="window" src="images/window.jpg">
-                <img id="stand1" src="images/stand1.jpg">
-                <img id="stand2" src="images/stand2.jpg">
-                <img id="stand3" src="images/stand3.jpg">
-                <img id="stand4" src="images/stand4.jpg">
-                <img id="GStand1" src="images/GStand1.jpg">
-                <img id="GStand2" src="images/GStand2.jpg">
-            </div>
-            <script type="module" src="/src/main.js"></script>
-        </main>
-        <aside style="width:200px; flex:0 0 200px;">
-            <div>
-                Движение:
-                <hr/> WASD, стрелки - движение
-                <hr/> Shift - движение
-                <hr/> M - скрыть/показать карту
-                <hr/>
-                <button id="fullscreenBtn" type="button">Fullscreen</button>
-            </div>
-        </aside>
+  <body>
+    <div style="display: flex; align-items: flex-start; gap: 16px; width: 100%">
+      <main id="canvas1" style="flex: 1; min-width: 0">
+        <div style="display: none">
+          <img id="wall" src="images/wall.jpg" />
+          <img id="door" src="images/door.jpg" />
+          <img id="window" src="images/window.jpg" />
+          <img id="stand1" src="images/stand1.jpg" />
+          <img id="stand2" src="images/stand2.jpg" />
+          <img id="stand3" src="images/stand3.jpg" />
+          <img id="stand4" src="images/stand4.jpg" />
+          <img id="GStand1" src="images/GStand1.jpg" />
+          <img id="GStand2" src="images/GStand2.jpg" />
+        </div>
+        <script type="module" src="/src/main.js"></script>
+      </main>
+      <aside style="width: 200px; flex: 0 0 200px">
+        <div>
+          Движение:
+          <hr />
+          WASD, стрелки - движение
+          <hr />
+          Shift - движение
+          <hr />
+          M - скрыть/показать карту
+          <hr />
+          <button id="fullscreenBtn" type="button">Fullscreen</button>
+        </div>
+      </aside>
     </div>
-</body>
-
+  </body>
 </html>

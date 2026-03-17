@@ -10,7 +10,12 @@ export function createInput({ onToggleMap } = {}) {
     bound = true;
 
     onKeyDown = function (e) {
-      if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+      if (
+        e.code === 'ArrowUp' ||
+        e.code === 'ArrowDown' ||
+        e.code === 'ArrowLeft' ||
+        e.code === 'ArrowRight'
+      ) {
         e.preventDefault();
       }
 
@@ -24,7 +29,12 @@ export function createInput({ onToggleMap } = {}) {
     };
 
     onKeyUp = function (e) {
-      if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+      if (
+        e.code === 'ArrowUp' ||
+        e.code === 'ArrowDown' ||
+        e.code === 'ArrowLeft' ||
+        e.code === 'ArrowRight'
+      ) {
         e.preventDefault();
       }
 

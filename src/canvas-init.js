@@ -28,8 +28,14 @@
     // В обычном режиме оставляем место под правый сайдбар и небольшой верхний отступ.
     const isFullscreen = !!document.fullscreenElement;
 
-    const cssWidth = Math.max(1, isFullscreen ? window.innerWidth : (window.innerWidth - sidebarWidth));
-    const cssHeight = Math.max(1, isFullscreen ? window.innerHeight : (window.innerHeight - topOffset));
+    const cssWidth = Math.max(
+      1,
+      isFullscreen ? window.innerWidth : window.innerWidth - sidebarWidth,
+    );
+    const cssHeight = Math.max(
+      1,
+      isFullscreen ? window.innerHeight : window.innerHeight - topOffset,
+    );
     const dpr = window.devicePixelRatio || 1;
 
     window.canvasCssWidth = cssWidth;

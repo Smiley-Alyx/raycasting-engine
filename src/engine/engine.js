@@ -41,8 +41,18 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
   }
 
   function processInput(dt) {
-    player.mov = (input.isDown('KeyW') || input.isDown('ArrowUp')) ? 1 : ((input.isDown('KeyS') || input.isDown('ArrowDown')) ? -1 : 0);
-    player.dir = (input.isDown('KeyA') || input.isDown('ArrowLeft')) ? 1 : ((input.isDown('KeyD') || input.isDown('ArrowRight')) ? -1 : 0);
+    player.mov =
+      input.isDown('KeyW') || input.isDown('ArrowUp')
+        ? 1
+        : input.isDown('KeyS') || input.isDown('ArrowDown')
+          ? -1
+          : 0;
+    player.dir =
+      input.isDown('KeyA') || input.isDown('ArrowLeft')
+        ? 1
+        : input.isDown('KeyD') || input.isDown('ArrowRight')
+          ? -1
+          : 0;
     player.sprint = input.isDown('ShiftLeft') || input.isDown('ShiftRight') ? 1 : 0;
 
     const timeScale = dt * 60;

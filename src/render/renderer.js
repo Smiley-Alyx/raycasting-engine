@@ -16,7 +16,7 @@ export function createRenderer({ ctx, getViewWidth, getViewHeight, player }) {
   function drawRay(dist, x, offset, img) {
     const viewWidth = getViewWidth();
     const viewHeight = getViewHeight();
-    const distanceProjectionPlane = (viewWidth / 2) / Math.tan(player.fov / 2);
+    const distanceProjectionPlane = viewWidth / 2 / Math.tan(player.fov / 2);
     const sliceHeight = (1 / dist) * distanceProjectionPlane;
 
     const texture = getTextureForMaterial(img);
