@@ -3,7 +3,6 @@ let cellLegend = {};
 
 export function setMap(newMap) {
   map = newMap;
-  window.map = newMap;
 }
 
 export function getMap() {

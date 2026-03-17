@@ -1,3 +1,24 @@
+let canvasInstance = null;
+let ctxInstance = null;
+let canvasCssWidth = null;
+let canvasCssHeight = null;
+
+export function getCanvas() {
+  return canvasInstance;
+}
+
+export function getCtx() {
+  return ctxInstance;
+}
+
+export function getCanvasCssWidth() {
+  return canvasCssWidth;
+}
+
+export function getCanvasCssHeight() {
+  return canvasCssHeight;
+}
+
 (() => {
   const host = document.getElementById('canvas1');
   if (!host) {
@@ -13,6 +34,9 @@
   if (!ctx) {
     throw new Error('Failed to get 2d context');
   }
+
+  canvasInstance = canvas;
+  ctxInstance = ctx;
 
   // Отключаем сглаживание при масштабировании, чтобы текстуры не "мыло".
   ctx.imageSmoothingEnabled = false;
@@ -38,8 +62,8 @@
     );
     const dpr = window.devicePixelRatio || 1;
 
-    window.canvasCssWidth = cssWidth;
-    window.canvasCssHeight = cssHeight;
+    canvasCssWidth = cssWidth;
+    canvasCssHeight = cssHeight;
 
     canvas.style.width = cssWidth + 'px';
     canvas.style.height = cssHeight + 'px';
@@ -90,7 +114,4 @@
   document.addEventListener('fullscreenchange', () => {
     resizeCanvas();
   });
-
-  window.canvas = canvas;
-  window.ctx = ctx;
 })();

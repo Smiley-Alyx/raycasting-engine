@@ -1,5 +1,4 @@
 import './canvas-init.js';
-import './legacy/map.js';
 import { startRayc, setLegend, setMap, setSpawn } from './rayc.js';
 import { loadLevel, loadLevelsIndex } from './levels/level-loader.js';
 
