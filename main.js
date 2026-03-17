@@ -1,6 +1,6 @@
 import './canvas-init.js';
 import './map.js';
-import { startRayc, setMap, setSpawn } from './rayc.js';
+import { startRayc, setLegend, setMap, setSpawn } from './rayc.js';
 import { loadLevel, loadLevelsIndex } from './level-loader.js';
 
 const levelsIndex = await loadLevelsIndex('/levels/index.json');
@@ -10,6 +10,7 @@ if (!defaultLevel) {
 }
 
 const level = await loadLevel(defaultLevel.file);
+setLegend(level.legend);
 setMap(level.grid);
 setSpawn(level.spawn);
 

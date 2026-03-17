@@ -14,6 +14,9 @@
     throw new Error('Failed to get 2d context');
   }
 
+  // Отключаем сглаживание при масштабировании, чтобы текстуры не "мыло".
+  ctx.imageSmoothingEnabled = false;
+
   // Адаптация под разные разрешения и HiDPI.
   // canvas.width/height задаём в device-пикселях, а логический размер (CSS px)
   // сохраняем отдельно, чтобы движок мог продолжать работать в "нормальных" пикселях.
@@ -41,6 +44,9 @@
     // Рисуем в координатах CSS-пикселей (движок оперирует ими),
     // а браузер сам масштабирует в device-пиксели.
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // На некоторых браузерах флаг может сбрасываться после setTransform.
+    ctx.imageSmoothingEnabled = false;
   };
 
   resizeCanvas();
