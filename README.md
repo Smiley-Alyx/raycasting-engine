@@ -1,4 +1,120 @@
-# Raycasting on JavaScript
+# Raycasting Engine (JavaScript)
 
-This is a raycasting engine on fucking JavaScript. This is a raycasting engine on fucking JavaScript.
-Please, do not ebashit menya on lom and other tyazholymi predmetami Please, do not ebashit menya on lom and other tyazholymi predmetami
+Небольшой учебный движок в стиле «ранних 3D» (как Wolfenstein 3D), написанный на чистом JavaScript и Canvas 2D.
+
+Проект полезен как:
+
+- **Демо raycasting-рендера** на Canvas 2D.
+- **Песочница для архитектурного рефакторинга** (ES-модули, разбиение на подсистемы).
+- **Основа для экспериментов**: уровни в JSON, материалы/текстуры, управление, fullscreen.
+
+## Как запустить
+
+Требуется Node.js.
+
+```bash
+npm install
+npm run dev
+```
+
+После запуска открой адрес, который напечатает Vite (обычно `http://127.0.0.1:5173/`).
+
+Дополнительно:
+
+- `npm run lint`
+- `npm run format`
+- `npm run format:check`
+
+## Управление
+
+- **W/A/S/D** или **стрелки**: движение/поворот
+- **Shift**: ускорение (спринт)
+- **M**: показать/скрыть миникарту
+- **F** или кнопка **Fullscreen**: fullscreen
+
+## Как работает движок (коротко)
+
+Движок рисует «3D-картинку» из 2D-сетки (тайловой карты) методом **raycasting**:
+
+1. **Карта** — это прямоугольная сетка чисел (0 = пусто, >0 = стена/объект).
+2. Для каждого вертикального столбца экрана (каждого `x`) движок:
+   - вычисляет угол луча в пределах `player.fov`
+   - запускает DDA-алгоритм (пошаговое пересечение клеток) и находит точку столкновения со стеной
+   - получает расстояние до стены и смещение по текстуре (texture offset)
+3. **Рендер** рисует вертикальный «срез» текстуры (`drawImage`) высотой, зависящей от расстояния до стены.
+4. Опционально поверх рисуется **миникарта**.
+
+Особенности реализации:
+
+- **HiDPI / devicePixelRatio**: физический размер canvas масштабируется под DPR, но логические размеры (CSS px) сохраняются отдельно.
+- **Отключено сглаживание** (`imageSmoothingEnabled = false`), чтобы текстуры не «мылом».
+- **Fullscreen**: переключение через `document.documentElement.requestFullscreen()` и перерасчёт размеров canvas.
+
+## Архитектура (основные модули)
+
+Код расположен в `src/` и разбит по подсистемам:
+
+- **`src/main.js`**
+  - точка входа
+  - загружает индекс уровней и уровень из JSON
+  - применяет `setLegend/setMap/setSpawn` и запускает `startRayc()`
+
+- **`src/rayc.js`**
+  - тонкий фасад (public API)
+  - создаёт `Engine` лениво (по первому вызову setter’ов или `startRayc`)
+
+- **`src/engine/engine.js`**
+  - игровой цикл (`requestAnimationFrame`)
+  - состояние игрока и обработка ввода
+  - интеграция `raycaster` + `renderer`
+  - методы жизненного цикла: `start()`, `stop()`, `dispose()`
+  - методы данных: `setMap()`, `setLegend()`, `setSpawn()`
+
+- **`src/raycast/raycaster.js`**
+  - raycasting (DDA)
+  - находит пересечения со стенами и отдаёт параметры для рендера
+
+- **`src/render/renderer.js`**
+  - фон, вертикальные срезы стен, миникарта
+
+- **`src/render/materials.js`**
+  - сопоставление «материал -> текстура»
+  - кэш DOM-элементов текстур (берутся из `index.html` по `id`)
+
+- **`src/state/map-state.js`**
+  - текущее состояние карты и легенды
+  - `hitWall()` и `getCellMaterial()`
+
+## Формат уровней
+
+Уровни лежат в `levels/`.
+
+- `levels/index.json` — индекс уровней + id уровня по умолчанию
+- `levels/level1.json` — данные конкретного уровня
+
+Схема уровня (упрощённо):
+
+```json
+{
+  "id": "level1",
+  "name": "Level 1",
+  "rows": ["111", "101", "111"],
+  "spawn": { "x": 2, "y": 2, "rot": 0 },
+  "legend": {
+    "1": "wall",
+    "2": "door"
+  }
+}
+```
+
+`rows` — массив строк, где каждый символ сейчас ограничен `0-9` (конвертируется в числа загрузчиком). Легенда (`legend`) переводит id ячейки в семантический материал.
+
+## Совместимость / глобальные алиасы
+
+Core-движок не использует `window.*`.
+
+Если нужно вернуть старый доступ из консоли (например, `window.startRayc()`), можно импортировать:
+
+- `src/legacy/compat.js`
+
+Он добавит тонкие алиасы в `window` (setters/старт/стоп) и геттеры `window.canvas/window.ctx`.
