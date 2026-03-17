@@ -11,7 +11,18 @@ export function getMap() {
 }
 
 export function setLegend(newLegend) {
-  cellLegend = newLegend && typeof newLegend === 'object' ? newLegend : {};
+  if (!newLegend || typeof newLegend !== 'object') {
+    cellLegend = {};
+    return;
+  }
+
+  const cleaned = {};
+  for (const [k, v] of Object.entries(newLegend)) {
+    if (typeof k !== 'string') continue;
+    if (typeof v !== 'string') continue;
+    cleaned[k] = v;
+  }
+  cellLegend = cleaned;
 }
 
 export function getLegend() {
