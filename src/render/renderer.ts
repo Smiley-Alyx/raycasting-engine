@@ -1,7 +1,18 @@
+import type { Player } from '../types/game';
 import { getTextureForMaterial } from './materials.js';
 import { getMap } from '../state/map-state';
 
-export function createRenderer({ ctx, getViewWidth, getViewHeight, player }) {
+export function createRenderer({
+  ctx,
+  getViewWidth,
+  getViewHeight,
+  player,
+}: {
+  ctx: CanvasRenderingContext2D;
+  getViewWidth: () => number;
+  getViewHeight: () => number;
+  player: Player;
+}) {
   function drawBackground() {
     const w = getViewWidth();
     const h = getViewHeight();
@@ -13,7 +24,7 @@ export function createRenderer({ ctx, getViewWidth, getViewHeight, player }) {
     ctx.fillRect(0, h / 2, w, h / 2);
   }
 
-  function drawRay(dist, x, offset, img) {
+  function drawRay(dist: number, x: number, offset: number, img: string | number) {
     const viewWidth = getViewWidth();
     const viewHeight = getViewHeight();
     const distanceProjectionPlane = viewWidth / 2 / Math.tan(player.fov / 2);

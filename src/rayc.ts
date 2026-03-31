@@ -1,18 +1,21 @@
-import { createEngine } from './engine/engine.js';
+import type { Grid, Legend, Spawn } from './types/game';
+import { createEngine } from './engine/engine';
 import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from './canvas-init.js';
 
-let engine = null;
+type EngineInstance = ReturnType<typeof createEngine>;
 
-export function setMap(newMap) {
+let engine: EngineInstance | null = null;
+
+export function setMap(newMap: Grid) {
   ensureEngine().setMap(newMap);
 }
 
-export function setSpawn(spawn) {
+export function setSpawn(spawn: Spawn | null) {
   if (!spawn || typeof spawn !== 'object') return;
   ensureEngine().setSpawn(spawn);
 }
 
-export function setLegend(newLegend) {
+export function setLegend(newLegend: Legend) {
   ensureEngine().setLegend(newLegend);
 }
 

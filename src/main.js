@@ -1,5 +1,5 @@
 import './canvas-init.js';
-import { startRayc, setLegend, setMap, setSpawn } from './rayc.js';
+import { startRayc, setLegend, setMap, setSpawn } from './rayc';
 import { loadLevel, loadLevelsIndex } from './levels/level-loader.js';
 
 const levelsIndex = await loadLevelsIndex('/levels/index.json');

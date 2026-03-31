@@ -5,13 +5,22 @@ import {
   setMap as setMapState,
 } from '../state/map-state';
 import { castRays } from '../raycast/raycaster';
-import { createRenderer } from '../render/renderer.js';
+import type { Grid, Legend, Player, Spawn } from '../types/game';
+import { createRenderer } from '../render/renderer';
 
-export function createEngine({ ctx, getViewWidth, getViewHeight }) {
+export function createEngine({
+  ctx,
+  getViewWidth,
+  getViewHeight,
+}: {
+  ctx: CanvasRenderingContext2D;
+  getViewWidth: () => number;
+  getViewHeight: () => number;
+}) {
   let started = false;
-  let rafId = null;
+  let rafId: number | null = null;
 
-  const player = {
+  const player: Player = {
     x: 46,
     y: 7,
     mov: 0,
@@ -37,22 +46,22 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
   let lag = 0.0;
   const MS_PER_UPDATE = 1000 / 60;
 
-  function setSpawn(spawn) {
+  function setSpawn(spawn: Spawn | null) {
     if (!spawn || typeof spawn !== 'object') return;
     if (typeof spawn.x === 'number') player.x = spawn.x;
     if (typeof spawn.y === 'number') player.y = spawn.y;
     if (typeof spawn.rot === 'number') player.rot = spawn.rot;
   }
 
-  function setMap(newMap) {
+  function setMap(newMap: Grid) {
     setMapState(newMap);
   }
 
-  function setLegend(newLegend) {
+  function setLegend(newLegend: Legend) {
     setLegendState(newLegend);
   }
 
-  function processInput(dt) {
+  function processInput(dt: number) {
     player.mov =
       input.isDown('KeyW') || input.isDown('ArrowUp')
         ? 1
@@ -83,7 +92,7 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
     }
   }
 
-  function addRotToAngle(rot, angle) {
+  function addRotToAngle(rot: number, angle: number) {
     const newAngle = angle + rot;
     if (newAngle < 0) {
       return newAngle + (360 * Math.PI) / 180;
@@ -117,7 +126,7 @@ export function createEngine({ ctx, getViewWidth, getViewHeight }) {
       lag -= MS_PER_UPDATE;
     }
 
-    render(lag / MS_PER_UPDATE);
+    render();
 
     rafId = requestAnimationFrame(tick);
   }
