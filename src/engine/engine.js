@@ -3,8 +3,8 @@ import {
   hitWall as hitWallState,
   setLegend as setLegendState,
   setMap as setMapState,
-} from '../state/map-state.js';
-import { castRays } from '../raycast/raycaster.js';
+} from '../state/map-state';
+import { castRays } from '../raycast/raycaster';
 import { createRenderer } from '../render/renderer.js';
 
 export function createEngine({ ctx, getViewWidth, getViewHeight }) {

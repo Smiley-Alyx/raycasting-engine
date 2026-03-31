@@ -1,6 +1,20 @@
-import { getCellMaterial, getMap, hitWall } from '../state/map-state.js';
+import type { Player } from '../types/game';
+import { getCellMaterial, getMap, hitWall } from '../state/map-state';
 
-export function castRays({ player, getViewWidth, addRotToAngle, drawRay }) {
+type AddRotToAngle = (rot: number, angle: number) => number;
+type DrawRay = (dist: number, x: number, offset: number, img: string | number) => void;
+
+export function castRays({
+  player,
+  getViewWidth,
+  addRotToAngle,
+  drawRay,
+}: {
+  player: Player;
+  getViewWidth: () => number;
+  addRotToAngle: AddRotToAngle;
+  drawRay: DrawRay;
+}) {
   const map = getMap();
   if (!map) return;
 
@@ -14,7 +28,19 @@ export function castRays({ player, getViewWidth, addRotToAngle, drawRay }) {
   }
 }
 
-function castSingleRay({ player, map, angle, row, drawRay }) {
+function castSingleRay({
+  player,
+  map,
+  angle,
+  row,
+  drawRay,
+}: {
+  player: Player;
+  map: number[][];
+  angle: number;
+  row: number;
+  drawRay: DrawRay;
+}) {
   const facingRight = angle < (90 * Math.PI) / 180 || angle > (270 * Math.PI) / 180;
   const facingUp = angle < (180 * Math.PI) / 180;
 
@@ -26,7 +52,7 @@ function castSingleRay({ player, map, angle, row, drawRay }) {
   let yMap = 0;
 
   let dist = 0;
-  let img = 0;
+  let img: string | number = 0;
   let offset = 0;
 
   // По горизонтали
@@ -40,7 +66,7 @@ function castSingleRay({ player, map, angle, row, drawRay }) {
   let distH = Infinity;
   let xHitH = 0;
   let yHitH = 0;
-  let imgH = 0;
+  let imgH: string | number = 0;
   let offsetH = 0;
 
   while (x >= 0 && x < map[0].length && y >= 0 && y < map.length) {
@@ -70,7 +96,7 @@ function castSingleRay({ player, map, angle, row, drawRay }) {
   let distV = Infinity;
   let xHitV = 0;
   let yHitV = 0;
-  let imgV = 0;
+  let imgV: string | number = 0;
   let offsetV = 0;
 
   while (x >= 0 && x < map[0].length && y >= 0 && y < map.length) {
