@@ -61,6 +61,7 @@ const loadLevel1Btn = document.getElementById('loadLevel1Btn');
 const tileSelect = document.getElementById('tileSelect');
 const clearMapBtn = document.getElementById('clearMapBtn');
 const exportBtn = document.getElementById('exportBtn');
+const downloadBtn = document.getElementById('downloadBtn');
 const exportOutput = document.getElementById('exportOutput');
 const spawnReadout = document.getElementById('spawnReadout');
 const backBtn = document.getElementById('backToGameBtn');
@@ -338,6 +339,28 @@ if (exportBtn instanceof HTMLButtonElement) {
       exportOutput.focus();
       exportOutput.select();
     }
+  });
+}
+
+function downloadTextFile(filename: string, text: string) {
+  const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+if (downloadBtn instanceof HTMLButtonElement) {
+  downloadBtn.addEventListener('click', () => {
+    const json = exportLevelJson();
+    if (exportOutput instanceof HTMLTextAreaElement) {
+      exportOutput.value = json;
+    }
+    downloadTextFile('custom-level.json', json);
   });
 }
 
