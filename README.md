@@ -29,6 +29,7 @@ npm run dev
 
 - **W/A/S/D** или **стрелки**: движение/поворот
 - **Shift**: ускорение (спринт)
+- **E**: открыть дверь
 - **M**: показать/скрыть миникарту
 - **F** или кнопка **Fullscreen**: fullscreen
 
@@ -50,40 +51,74 @@ npm run dev
 - **Отключено сглаживание** (`imageSmoothingEnabled = false`), чтобы текстуры не «мылом».
 - **Fullscreen**: переключение через `document.documentElement.requestFullscreen()` и перерасчёт размеров canvas.
 
-## Архитектура (основные модули)
+## Архитектура: разделение на слои (engine vs game)
 
-Код расположен в `src/` и разбит по подсистемам:
+Цель разделения: **движок должен быть переиспользуемым**, чтобы можно было создавать новую игру (уровни, меню, текстуры, музыка) без правок в `engine`.
 
-- **`src/main.js`**
-  - точка входа
-  - загружает индекс уровней и уровень из JSON
-  - применяет `setLegend/setMap/setSpawn` и запускает `startRayc()`
+### Слой engine (ядро, без контента)
 
-- **`src/rayc.js`**
-  - тонкий фасад (public API)
-  - создаёт `Engine` лениво (по первому вызову setter’ов или `startRayc`)
+**`src/engine/*`** — игровой цикл и правила, но без конкретной игры и ассетов.
 
-- **`src/engine/engine.js`**
+- **`src/engine/engine.ts`**
   - игровой цикл (`requestAnimationFrame`)
-  - состояние игрока и обработка ввода
+  - обработка ввода и изменение `player`
   - интеграция `raycaster` + `renderer`
-  - методы жизненного цикла: `start()`, `stop()`, `dispose()`
-  - методы данных: `setMap()`, `setLegend()`, `setSpawn()`
+  - API жизненного цикла: `start()`, `stop()`, `dispose()`
+  - API данных: `setMap()`, `setLegend()`, `setSpawn()`
+  - **важно**: `player`, `input` и `renderer` передаются извне (инъекции), чтобы движок не зависел от DOM
 
-- **`src/raycast/raycaster.js`**
+- **`src/raycast/raycaster.ts`**
   - raycasting (DDA)
   - находит пересечения со стенами и отдаёт параметры для рендера
 
-- **`src/render/renderer.js`**
-  - фон, вертикальные срезы стен, миникарта
-
-- **`src/render/materials.js`**
-  - сопоставление «материал -> текстура»
-  - кэш DOM-элементов текстур (берутся из `index.html` по `id`)
-
-- **`src/state/map-state.js`**
+- **`src/state/map-state.ts`**
   - текущее состояние карты и легенды
   - `hitWall()` и `getCellMaterial()`
+
+### Слой game (контент, ассеты, UI)
+
+**`src/game/*`** — «конкретная игра на движке»:
+
+- **`src/game/main.ts`**
+  - entrypoint
+  - загружает индекс уровней и уровень из JSON
+  - применяет `setLegend/setMap/setSpawn` и запускает `startRayc()`
+
+- **`src/game/rayc.ts`**
+  - фасад игры (создаёт `player`, `input`, `renderer`, а затем `engine`)
+
+- **`src/game/levels/*`**
+  - загрузка/нормализация уровней (JSON)
+
+- **`src/game/render/*`**
+  - рендер и материалы/текстуры (DOM-изображения из `index.html`)
+
+### Proxy-слой для совместимости
+
+Чтобы старые импорты не ломались, модули ниже являются тонкими реэкспортами game-слоя:
+
+- `src/main.ts` → `src/game/main.ts`
+- `src/rayc.ts` → `src/game/rayc.ts`
+- `src/render/*` → `src/game/render/*`
+- `src/levels/*` → `src/game/levels/*`
+
+## Как сделать свою игру на этом движке
+
+Минимальный путь:
+
+1. **Скопируй/создай** папку `src/game/` и делай изменения только там.
+2. **Уровни** положи в `levels/` и добавь индекс `levels/index.json`.
+3. **Текстуры** подключи в `index.html` как `<img id="..." src="...">`.
+4. В `src/game/render/materials.ts` определи соответствие:
+   - `material -> textureId`
+   - `textureId -> domId` (id картинки)
+5. В `src/game/main.ts` загрузи нужный уровень и вызови:
+   - `setLegend(level.legend)`
+   - `setMap(level.grid)`
+   - `setSpawn(level.spawn)`
+   - `startRayc()`
+
+Идея: добавление контента/меню/музыки/звуков делается в `src/game/*`, а `src/engine/*` остаётся без изменений.
 
 ## Формат уровней
 

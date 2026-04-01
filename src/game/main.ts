@@ -1,6 +1,6 @@
 import '../canvas-init';
 import { startRayc, setLegend, setMap, setSpawn } from './rayc';
-import { loadLevel, loadLevelsIndex } from '../levels/level-loader';
+import { loadLevel, loadLevelsIndex } from './levels/level-loader';
 
 const levelsIndex = await loadLevelsIndex('/levels/index.json');
 const defaultLevel = levelsIndex.levels.find(

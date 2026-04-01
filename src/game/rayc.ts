@@ -2,7 +2,7 @@ import type { Grid, Legend, Player, Spawn } from '../types/game';
 import { createEngine } from '../engine/engine';
 import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from '../canvas-init';
 import { createInput } from '../input/input';
-import { createRenderer } from '../render/renderer';
+import { createRenderer } from './render/renderer';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
