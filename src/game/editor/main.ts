@@ -413,13 +413,20 @@ if (applyJsonBtn instanceof HTMLButtonElement) {
   applyJsonBtn.addEventListener('click', () => {
     if (!(exportOutput instanceof HTMLTextAreaElement)) return;
     try {
-      const parsed = JSON.parse(exportOutput.value) as unknown;
+      const raw = exportOutput.value.trim();
+      if (!raw) {
+        alert('Textarea is empty. Click "Export JSON" first or paste level JSON, then click "Apply JSON".');
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as unknown;
       if (!isLevelJson(parsed)) {
         throw new Error('Invalid JSON: expected { rows: string[] }');
       }
       applyLevelJson(parsed);
     } catch (err) {
-      alert(String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      alert('Apply JSON failed: ' + msg);
     }
   });
 }
