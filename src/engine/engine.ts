@@ -1,4 +1,3 @@
-import { createInput } from '../input/input';
 import {
   hitWall as hitWallState,
   isDoorCell,
@@ -8,41 +7,36 @@ import {
 } from '../state/map-state';
 import { castRays } from '../raycast/raycaster';
 import type { Grid, Legend, Player, Spawn } from '../types/game';
-import { createRenderer } from '../render/renderer';
+
+type Input = {
+  bind: () => void;
+  unbind: () => void;
+  isDown: (code: string) => boolean;
+};
+
+type Renderer = {
+  drawBackground: () => void;
+  drawRay: (dist: number, x: number, offset: number, img: string | number) => void;
+  drawMap: () => void;
+};
 
 export function createEngine({
   ctx,
   getViewWidth,
   getViewHeight,
+  player,
+  input,
+  renderer,
 }: {
   ctx: CanvasRenderingContext2D;
   getViewWidth: () => number;
   getViewHeight: () => number;
+  player: Player;
+  input: Input;
+  renderer: Renderer;
 }) {
   let started = false;
   let rafId: number | null = null;
-
-  const player: Player = {
-    x: 46,
-    y: 7,
-    mov: 0,
-    dir: 0,
-    rot: -1.5,
-    speed: 0.05,
-    sprint: 0,
-    sprintFactor: 2,
-    rotSpeed: (2 * Math.PI) / 180,
-    fov: (60 * Math.PI) / 180,
-    flatmap: 0,
-  };
-
-  const renderer = createRenderer({ ctx, getViewWidth, getViewHeight, player });
-
-  const input = createInput({
-    onToggleMap: function () {
-      player.flatmap = player.flatmap ? 0 : 1;
-    },
-  });
 
   let previousTime = Date.now();
   let lag = 0.0;
