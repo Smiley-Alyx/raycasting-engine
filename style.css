@@ -30,6 +30,22 @@ body {
   background: #151515;
 }
 
+:fullscreen .app {
+  padding: 0;
+}
+
+:fullscreen .frame {
+  width: 100vw;
+  height: 100vh;
+  border: none;
+  box-shadow: none;
+  grid-template-columns: 1fr;
+}
+
+:fullscreen .sidebar {
+  display: none;
+}
+
 .viewport {
   position: relative;
   min-width: 0;
