@@ -1,10 +1,25 @@
-export async function loadLevel(levelUrl) {
+import type { Legend, Spawn } from '../types/game';
+
+type LevelJson = {
+  id?: string;
+  name?: string;
+  legend?: Legend;
+  rows: string[];
+  spawn?: unknown;
+};
+
+type LevelsIndexJson = {
+  levels: Array<{ id: string; file: string }>;
+  default: string;
+};
+
+export async function loadLevel(levelUrl: string) {
   const res = await fetch(levelUrl);
   if (!res.ok) {
     throw new Error('Failed to load level: ' + levelUrl);
   }
 
-  const data = await res.json();
+  const data: LevelJson = await res.json();
 
   if (!data || !Array.isArray(data.rows) || data.rows.length === 0) {
     throw new Error('Invalid level format: missing rows');
@@ -19,10 +34,10 @@ export async function loadLevel(levelUrl) {
     }
     width = Math.max(width, data.rows[y].length);
   }
-  const normalizedRows = data.rows.map((row) => row.padEnd(width, '0'));
+  const normalizedRows = data.rows.map((row: string) => row.padEnd(width, '0'));
 
   // Преобразуем rows (строки) в числовую сетку (как ожидает текущий движок).
-  const grid = normalizedRows.map((row) => {
+  const grid = normalizedRows.map((row: string) => {
     const arr = new Array(row.length);
     for (let i = 0; i < row.length; i++) {
       const code = row.charCodeAt(i) - 48;
@@ -34,24 +49,34 @@ export async function loadLevel(levelUrl) {
     return arr;
   });
 
-  const spawn = data.spawn && typeof data.spawn === 'object' ? data.spawn : null;
+  let spawn: Spawn | null = null;
+  if (data.spawn && typeof data.spawn === 'object') {
+    const maybe = data.spawn as { x?: unknown; y?: unknown; rot?: unknown };
+    if (typeof maybe.x === 'number' && typeof maybe.y === 'number') {
+      spawn = {
+        x: maybe.x,
+        y: maybe.y,
+        rot: typeof maybe.rot === 'number' ? maybe.rot : undefined,
+      };
+    }
+  }
 
   return {
     id: data.id,
     name: data.name,
-    legend: data.legend || {},
+    legend: data.legend ?? {},
     grid,
     spawn,
   };
 }
 
-export async function loadLevelsIndex(indexUrl) {
+export async function loadLevelsIndex(indexUrl: string) {
   const res = await fetch(indexUrl);
   if (!res.ok) {
     throw new Error('Failed to load levels index: ' + indexUrl);
   }
 
-  const data = await res.json();
+  const data: LevelsIndexJson = await res.json();
   if (!data || !Array.isArray(data.levels) || typeof data.default !== 'string') {
     throw new Error('Invalid levels index format');
   }

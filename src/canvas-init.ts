@@ -1,7 +1,7 @@
-let canvasInstance = null;
-let ctxInstance = null;
-let canvasCssWidth = null;
-let canvasCssHeight = null;
+let canvasInstance: HTMLCanvasElement | null = null;
+let ctxInstance: CanvasRenderingContext2D | null = null;
+let canvasCssWidth: number | null = null;
+let canvasCssHeight: number | null = null;
 
 export function getCanvas() {
   return canvasInstance;
@@ -44,7 +44,7 @@ export function getCanvasCssHeight() {
   // Адаптация под разные разрешения и HiDPI.
   // canvas.width/height задаём в device-пикселях, а логический размер (CSS px)
   // сохраняем отдельно, чтобы движок мог продолжать работать в "нормальных" пикселях.
-  const resizeCanvas = () => {
+  const resizeCanvas = (): void => {
     const sidebarWidth = 200;
     const topOffset = 37;
 
@@ -84,7 +84,7 @@ export function getCanvasCssHeight() {
 
   // Fullscreen: кнопка в UI + горячая клавиша F.
   // В fullscreen растягиваем canvas на весь экран.
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = async (): Promise<void> => {
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
@@ -105,7 +105,7 @@ export function getCanvasCssHeight() {
     });
   }
 
-  window.addEventListener('keydown', (e) => {
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.code === 'KeyF' && !e.repeat) {
       toggleFullscreen();
     }

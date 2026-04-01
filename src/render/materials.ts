@@ -1,4 +1,4 @@
-const textureById = new Map([
+const textureById: Map<number, string> = new Map([
   [1, 'wall'],
   [2, 'window'],
   [3, 'door'],
@@ -10,7 +10,7 @@ const textureById = new Map([
   [9, 'GStand2'],
 ]);
 
-const materialToTextureId = new Map([
+const materialToTextureId: Map<string, number> = new Map([
   ['wall', 1],
   ['brick', 1],
   ['window', 2],
@@ -23,19 +23,24 @@ const materialToTextureId = new Map([
   ['gstand2', 9],
 ]);
 
-const cache = new Map();
+const cache: Map<string, HTMLImageElement | null> = new Map();
 
-function getDomTextureByNumericId(id) {
+function getDomTextureByNumericId(id: number): HTMLImageElement | null {
   const domId = textureById.get(id);
   if (!domId) return null;
 
-  if (cache.has(domId)) return cache.get(domId);
+  const cached = cache.get(domId);
+  if (cached !== undefined) return cached;
+
   const el = document.getElementById(domId);
-  cache.set(domId, el);
-  return el;
+  const img = el instanceof HTMLImageElement ? el : null;
+  cache.set(domId, img);
+  return img;
 }
 
-export function getTextureForMaterial(materialOrId) {
+export function getTextureForMaterial(
+  materialOrId: string | number,
+): HTMLImageElement | null {
   if (typeof materialOrId === 'number') {
     return getDomTextureByNumericId(materialOrId);
   }

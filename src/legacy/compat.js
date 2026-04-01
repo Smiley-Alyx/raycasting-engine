@@ -1,5 +1,5 @@
 import { disposeRayc, setLegend, setMap, setSpawn, startRayc, stopRayc } from '../rayc';
-import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from '../canvas-init.js';
+import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from '../canvas-init';
 
 window.setMap = setMap;
 window.setSpawn = setSpawn;

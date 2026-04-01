@@ -1,15 +1,21 @@
-export function createInput({ onToggleMap } = {}) {
-  const keysDown = Object.create(null);
+export function createInput(
+  {
+    onToggleMap,
+  }: {
+    onToggleMap?: (() => void) | null;
+  } = {},
+) {
+  const keysDown: Record<string, boolean> = Object.create(null);
 
   let bound = false;
-  let onKeyDown = null;
-  let onKeyUp = null;
+  let onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+  let onKeyUp: ((e: KeyboardEvent) => void) | null = null;
 
   function bind() {
     if (bound) return;
     bound = true;
 
-    onKeyDown = function (e) {
+    onKeyDown = function (e: KeyboardEvent) {
       if (
         e.code === 'ArrowUp' ||
         e.code === 'ArrowDown' ||
@@ -28,7 +34,7 @@ export function createInput({ onToggleMap } = {}) {
       keysDown[e.code] = true;
     };
 
-    onKeyUp = function (e) {
+    onKeyUp = function (e: KeyboardEvent) {
       if (
         e.code === 'ArrowUp' ||
         e.code === 'ArrowDown' ||
@@ -49,14 +55,14 @@ export function createInput({ onToggleMap } = {}) {
     if (!bound) return;
     bound = false;
 
-    window.removeEventListener('keydown', onKeyDown);
-    window.removeEventListener('keyup', onKeyUp);
+    if (onKeyDown) window.removeEventListener('keydown', onKeyDown);
+    if (onKeyUp) window.removeEventListener('keyup', onKeyUp);
 
     onKeyDown = null;
     onKeyUp = null;
   }
 
-  function isDown(code) {
+  function isDown(code: string): boolean {
     return !!keysDown[code];
   }
 

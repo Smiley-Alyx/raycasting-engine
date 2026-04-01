@@ -1,5 +1,5 @@
 import type { Player } from '../types/game';
-import { getTextureForMaterial } from './materials.js';
+import { getTextureForMaterial } from './materials';
 import { getMap } from '../state/map-state';
 
 export function createRenderer({

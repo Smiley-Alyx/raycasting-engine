@@ -1,4 +1,4 @@
-import { createInput } from '../input/input.js';
+import { createInput } from '../input/input';
 import {
   hitWall as hitWallState,
   setLegend as setLegendState,

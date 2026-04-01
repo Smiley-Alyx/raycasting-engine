@@ -1,6 +1,6 @@
 import type { Grid, Legend, Spawn } from './types/game';
 import { createEngine } from './engine/engine';
-import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from './canvas-init.js';
+import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from './canvas-init';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
