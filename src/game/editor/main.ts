@@ -3,6 +3,27 @@ if (!editorRoot) {
   throw new Error('Missing #editorRoot element');
 }
 
+function setGridFromRows(rows: string[]) {
+  const h = rows.length;
+  const w = rows[0]?.length ?? 0;
+  if (w <= 0 || h <= 0) return;
+
+  const next = makeGrid(w, h, 0);
+  for (let y = 0; y < h; y++) {
+    const row = rows[y];
+    for (let x = 0; x < Math.min(w, row.length); x++) {
+      const digit = Number(row[x]);
+      next[y][x] = Number.isFinite(digit) ? digit : 0;
+    }
+  }
+
+  grid = next;
+  mapW = w;
+  mapH = h;
+  setIntInput(mapWidthInput as HTMLElement | null, w);
+  setIntInput(mapHeightInput as HTMLElement | null, h);
+}
+
 const root = editorRoot;
 
 const canvas = document.createElement('canvas');
@@ -20,6 +41,7 @@ ctx2d.imageSmoothingEnabled = false;
 const mapWidthInput = document.getElementById('mapWidthInput');
 const mapHeightInput = document.getElementById('mapHeightInput');
 const resizeMapBtn = document.getElementById('resizeMapBtn');
+const loadLevel1Btn = document.getElementById('loadLevel1Btn');
 const tileSelect = document.getElementById('tileSelect');
 const clearMapBtn = document.getElementById('clearMapBtn');
 const exportBtn = document.getElementById('exportBtn');
@@ -36,6 +58,11 @@ function readBrush() {
   if (!(tileSelect instanceof HTMLSelectElement)) return 1;
   const v = Number(tileSelect.value);
   return Number.isFinite(v) ? v : 1;
+}
+
+function setIntInput(el: HTMLElement | null, value: number) {
+  if (!(el instanceof HTMLInputElement)) return;
+  el.value = String(value);
 }
 
 let mapW = readInt(mapWidthInput as HTMLElement | null, 32);
@@ -170,6 +197,27 @@ if (resizeMapBtn instanceof HTMLButtonElement) {
     const w = Math.max(4, Math.min(128, readInt(mapWidthInput as HTMLElement | null, mapW)));
     const h = Math.max(4, Math.min(128, readInt(mapHeightInput as HTMLElement | null, mapH)));
     resizeGrid(w, h);
+  });
+}
+
+type LevelJson = {
+  rows: string[];
+};
+
+async function loadLevelJson(path: string): Promise<LevelJson> {
+  const res = await fetch(path);
+  if (!res.ok) {
+    throw new Error('Failed to load level: ' + path);
+  }
+  return (await res.json()) as LevelJson;
+}
+
+if (loadLevel1Btn instanceof HTMLButtonElement) {
+  loadLevel1Btn.addEventListener('click', () => {
+    void (async () => {
+      const level = await loadLevelJson('/levels/level1.json');
+      setGridFromRows(level.rows);
+    })();
   });
 }
 
