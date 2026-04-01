@@ -22,6 +22,7 @@ type Renderer = {
 
 type EngineEvents = {
   onDoorOpen?: (xMap: number, yMap: number) => void;
+  onFootstep?: () => void;
 };
 
 export function createEngine({
@@ -49,6 +50,8 @@ export function createEngine({
   const MS_PER_UPDATE = 1000 / 60;
 
   let prevUseDown = false;
+
+  let footstepCooldownMs = 0;
 
   function setSpawn(spawn: Spawn | null) {
     if (!spawn || typeof spawn !== 'object') return;
@@ -93,12 +96,25 @@ export function createEngine({
 
     player.rot = addRotToAngle(rotStep, player.rot);
 
+    const oldX = player.x;
+    const oldY = player.y;
+
     const xNew = player.x + step * Math.cos(player.rot);
     const yNew = player.y - step * Math.sin(player.rot);
 
     if (!hitWallState(xNew, yNew)) {
       player.x = xNew;
       player.y = yNew;
+    }
+
+    const moving = player.mov !== 0;
+    const actuallyMoved = !hitWallState(xNew, yNew) && (oldX !== player.x || oldY !== player.y);
+
+    footstepCooldownMs = Math.max(0, footstepCooldownMs - dt * 1000);
+    if (moving && actuallyMoved && footstepCooldownMs <= 0) {
+      events?.onFootstep?.();
+      const walkIntervalMs = 360;
+      footstepCooldownMs = player.sprint ? walkIntervalMs / 4 : walkIntervalMs;
     }
   }
 

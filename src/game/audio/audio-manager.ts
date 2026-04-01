@@ -24,6 +24,8 @@ export class AudioManager {
     if (this.unlocked) return;
     this.unlocked = true;
 
+    this.playMusic();
+
     if (this.musicEl) {
       this.musicEl.muted = true;
       void this.musicEl
@@ -106,6 +108,8 @@ export class AudioManager {
     this.musicEl.src = config.src;
     this.musicEl.loop = config.loop ?? true;
     this.applyMusicVolume();
+
+    this.playMusic();
   }
 
   playMusic() {

@@ -68,6 +68,9 @@ function ensureEngine() {
       onDoorOpen: () => {
         audio.playSfx('doorOpen');
       },
+      onFootstep: () => {
+        audio.playSfx('footstep');
+      },
     },
   });
   return engine;
