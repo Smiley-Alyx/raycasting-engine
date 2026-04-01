@@ -62,6 +62,7 @@ const tileSelect = document.getElementById('tileSelect');
 const clearMapBtn = document.getElementById('clearMapBtn');
 const exportBtn = document.getElementById('exportBtn');
 const downloadBtn = document.getElementById('downloadBtn');
+const applyJsonBtn = document.getElementById('applyJsonBtn');
 const exportOutput = document.getElementById('exportOutput');
 const spawnReadout = document.getElementById('spawnReadout');
 const backBtn = document.getElementById('backToGameBtn');
@@ -281,6 +282,31 @@ type LevelJson = {
   spawn?: { x: number; y: number; rot: number };
 };
 
+function isLevelJson(value: unknown): value is LevelJson {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as { rows?: unknown };
+  return Array.isArray(v.rows) && v.rows.every((r) => typeof r === 'string');
+}
+
+function applyLevelJson(level: LevelJson) {
+  if (level.legend) {
+    const nextLegend: Record<number, string> = {};
+    for (const [k, v] of Object.entries(level.legend)) {
+      const n = Number(k);
+      if (Number.isFinite(n) && typeof v === 'string') nextLegend[n] = v;
+    }
+    legend = nextLegend;
+    updatePalette();
+  }
+
+  if (level.spawn) {
+    spawn = level.spawn;
+    updateSpawnReadout();
+  }
+
+  setGridFromRows(level.rows);
+}
+
 async function loadLevelJson(path: string): Promise<LevelJson> {
   const res = await fetch(path);
   if (!res.ok) {
@@ -293,20 +319,7 @@ if (loadLevel1Btn instanceof HTMLButtonElement) {
   loadLevel1Btn.addEventListener('click', () => {
     void (async () => {
       const level = await loadLevelJson('/levels/level1.json');
-      if (level.legend) {
-        const nextLegend: Record<number, string> = {};
-        for (const [k, v] of Object.entries(level.legend)) {
-          const n = Number(k);
-          if (Number.isFinite(n)) nextLegend[n] = v;
-        }
-        legend = nextLegend;
-        updatePalette();
-      }
-      if (level.spawn) {
-        spawn = level.spawn;
-        updateSpawnReadout();
-      }
-      setGridFromRows(level.rows);
+      applyLevelJson(level);
     })();
   });
 }
@@ -361,6 +374,21 @@ if (downloadBtn instanceof HTMLButtonElement) {
       exportOutput.value = json;
     }
     downloadTextFile('custom-level.json', json);
+  });
+}
+
+if (applyJsonBtn instanceof HTMLButtonElement) {
+  applyJsonBtn.addEventListener('click', () => {
+    if (!(exportOutput instanceof HTMLTextAreaElement)) return;
+    try {
+      const parsed = JSON.parse(exportOutput.value) as unknown;
+      if (!isLevelJson(parsed)) {
+        throw new Error('Invalid JSON: expected { rows: string[] }');
+      }
+      applyLevelJson(parsed);
+    } catch (err) {
+      alert(String(err));
+    }
   });
 }
 
