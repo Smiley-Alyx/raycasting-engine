@@ -113,6 +113,14 @@ function readBrush() {
   return Number.isFinite(v) ? v : 1;
 }
 
+function setBrush(tile: number) {
+  if (!(tileSelect instanceof HTMLSelectElement)) return;
+  const value = String(tile);
+  if (tileSelect.querySelector(`option[value="${value}"]`)) {
+    tileSelect.value = value;
+  }
+}
+
 function setIntInput(el: HTMLElement | null, value: number) {
   if (!(el instanceof HTMLInputElement)) return;
   el.value = String(value);
@@ -221,6 +229,7 @@ function draw() {
 }
 
 let painting = false;
+let paintTile: number | null = null;
 
 function paintAtClient(clientX: number, clientY: number) {
   const rect = root.getBoundingClientRect();
@@ -250,22 +259,45 @@ canvas.addEventListener('pointerdown', (e: PointerEvent) => {
     return;
   }
 
+  if (e.altKey) {
+    const cell = cellAtClient(e.clientX, e.clientY);
+    if (cell) {
+      const tile = grid[cell.y]?.[cell.x] ?? 0;
+      setBrush(tile);
+    }
+    painting = false;
+    return;
+  }
+
   painting = true;
+  paintTile = e.button === 2 ? 0 : readBrush();
   canvas.setPointerCapture(e.pointerId);
-  paintAtClient(e.clientX, e.clientY);
+  const cell = cellAtClient(e.clientX, e.clientY);
+  if (cell) {
+    grid[cell.y][cell.x] = paintTile;
+  }
 });
 
 canvas.addEventListener('pointermove', (e: PointerEvent) => {
   if (!painting) return;
-  paintAtClient(e.clientX, e.clientY);
+  const cell = cellAtClient(e.clientX, e.clientY);
+  if (!cell) return;
+  if (paintTile === null) return;
+  grid[cell.y][cell.x] = paintTile;
 });
 
 canvas.addEventListener('pointerup', () => {
   painting = false;
+  paintTile = null;
 });
 
 canvas.addEventListener('pointercancel', () => {
   painting = false;
+  paintTile = null;
+});
+
+canvas.addEventListener('contextmenu', (e: MouseEvent) => {
+  e.preventDefault();
 });
 
 if (resizeMapBtn instanceof HTMLButtonElement) {
