@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Level Editor</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="shortcut icon" href="logo.png" type="image/x-icon" />
+  </head>
+
+  <body>
+    <div class="app">
+      <div class="frame" id="frame">
+        <main id="editorRoot" class="viewport">
+          <div class="menu" id="editorOverlay">
+            <div class="menu-box">
+              <div class="menu-title">Editor</div>
+              <div class="menu-subtitle">Work in progress</div>
+              <div class="menu-buttons">
+                <button class="btn" id="backToGameBtn" type="button">Back</button>
+              </div>
+            </div>
+          </div>
+          <script type="module" src="/src/game/editor/main.ts"></script>
+        </main>
+        <aside class="sidebar">
+          <section class="panel">
+            <h2 class="panel-title">Editor</h2>
+            <div class="hint">Заглушка редактора. Дальше будет вид сверху, кисть, размер карты.</div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>

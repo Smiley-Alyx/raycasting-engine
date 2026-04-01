@@ -129,7 +129,7 @@ function initMenu() {
 
   if (editorBtn instanceof HTMLButtonElement) {
     editorBtn.addEventListener('click', () => {
-      alert('Level editor is not implemented yet');
+      window.location.href = '/editor.html';
     });
   }
 }
