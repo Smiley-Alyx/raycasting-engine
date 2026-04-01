@@ -17,6 +17,8 @@ import {
 import { loadLevel, loadLevelsIndex } from './levels/level-loader';
 import { DEFAULT_SFX } from './audio/sfx-config';
 
+const CUSTOM_LEVEL_STORAGE_KEY = 'rayc.customLevel';
+
 function initAudioUi() {
   const musicToggleBtn = document.getElementById('musicToggleBtn');
   const sfxToggleBtn = document.getElementById('sfxToggleBtn');
@@ -115,6 +117,58 @@ async function startLevelById(levelId: string) {
   running = true;
 }
 
+type CustomLevelJson = {
+  id?: string;
+  legend: Record<string, string>;
+  rows: string[];
+  spawn: { x: number; y: number; rot: number };
+  audio?: { music?: Parameters<typeof setAudioConfig>[0]['music'] };
+};
+
+function parseCustomLevelJson(raw: string): CustomLevelJson {
+  const parsed = JSON.parse(raw) as unknown;
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new Error('Invalid custom level JSON');
+  }
+  const p = parsed as Partial<CustomLevelJson>;
+  if ((p.id ?? 'custom') !== 'custom') {
+    throw new Error('Custom level must have id="custom"');
+  }
+  if (!p.legend || typeof p.legend !== 'object') {
+    throw new Error('Custom level must have legend');
+  }
+  if (!Array.isArray(p.rows) || !p.rows.every((r) => typeof r === 'string')) {
+    throw new Error('Custom level must have rows: string[]');
+  }
+  if (!p.spawn || typeof p.spawn.x !== 'number' || typeof p.spawn.y !== 'number' || typeof p.spawn.rot !== 'number') {
+    throw new Error('Custom level must have spawn');
+  }
+  return p as CustomLevelJson;
+}
+
+async function maybeStartCustomFromEditor() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('play') !== 'custom') return;
+  const raw = localStorage.getItem(CUSTOM_LEVEL_STORAGE_KEY);
+  if (!raw) return;
+
+  const level = parseCustomLevelJson(raw);
+
+  setLegend(level.legend as unknown as Record<number, string>);
+  setMap(level.rows.map((row) => row.split('').map((c) => Number(c) || 0)));
+  setSpawn(level.spawn);
+
+  setAudioConfig({
+    music: level.audio?.music ?? null,
+    sfx: DEFAULT_SFX,
+  });
+  playMusic();
+
+  hideMenu();
+  startRayc();
+  running = true;
+}
+
 function initMenu() {
   showMenu();
 
@@ -143,3 +197,4 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
 });
 initAudioUi();
 initMenu();
+void maybeStartCustomFromEditor();

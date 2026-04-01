@@ -30,6 +30,10 @@
             <h2 class="panel-title">Editor</h2>
             <div class="control-group">
               <button class="btn" id="loadLevel1Btn" type="button">Load Level 1</button>
+              <label class="label">
+                Load custom level JSON
+                <input id="loadCustomFileInput" class="range" type="file" accept="application/json,.json" />
+              </label>
               <hr />
               <label class="label">
                 Width
@@ -50,6 +54,7 @@
               <button class="btn" id="exportBtn" type="button">Export JSON</button>
               <button class="btn" id="downloadBtn" type="button">Download JSON</button>
               <button class="btn" id="applyJsonBtn" type="button">Apply JSON</button>
+              <button class="btn" id="playBtn" type="button">Play custom</button>
               <div class="hint">Shift+Click по карте — поставить spawn</div>
               <div class="hint" id="spawnReadout">Spawn: -</div>
               <label class="label">

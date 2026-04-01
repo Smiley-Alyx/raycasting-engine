@@ -63,9 +63,13 @@ const clearMapBtn = document.getElementById('clearMapBtn');
 const exportBtn = document.getElementById('exportBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const applyJsonBtn = document.getElementById('applyJsonBtn');
+const playBtn = document.getElementById('playBtn');
+const loadCustomFileInput = document.getElementById('loadCustomFileInput');
 const exportOutput = document.getElementById('exportOutput');
 const spawnReadout = document.getElementById('spawnReadout');
 const backBtn = document.getElementById('backToGameBtn');
+
+const CUSTOM_LEVEL_STORAGE_KEY = 'rayc.customLevel';
 
 let legend: Record<number, string> = {
   0: 'empty',
@@ -309,6 +313,7 @@ if (resizeMapBtn instanceof HTMLButtonElement) {
 }
 
 type LevelJson = {
+  id?: string;
   rows: string[];
   legend?: Record<string, string>;
   spawn?: { x: number; y: number; rot: number };
@@ -337,6 +342,10 @@ function applyLevelJson(level: LevelJson) {
   }
 
   setGridFromRows(level.rows);
+}
+
+function isCustomLevelJson(level: LevelJson) {
+  return (level.id ?? 'custom') === 'custom';
 }
 
 async function loadLevelJson(path: string): Promise<LevelJson> {
@@ -423,11 +432,56 @@ if (applyJsonBtn instanceof HTMLButtonElement) {
       if (!isLevelJson(parsed)) {
         throw new Error('Invalid JSON: expected { rows: string[] }');
       }
+
+      if (!isCustomLevelJson(parsed)) {
+        throw new Error('Only custom levels can be loaded/applied. Expected id: "custom"');
+      }
+
       applyLevelJson(parsed);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       alert('Apply JSON failed: ' + msg);
     }
+  });
+}
+
+async function readTextFile(file: File): Promise<string> {
+  return await file.text();
+}
+
+if (loadCustomFileInput instanceof HTMLInputElement) {
+  loadCustomFileInput.addEventListener('change', () => {
+    const file = loadCustomFileInput.files?.[0];
+    if (!file) return;
+    void (async () => {
+      try {
+        const raw = (await readTextFile(file)).trim();
+        const parsed = JSON.parse(raw) as unknown;
+        if (!isLevelJson(parsed)) {
+          throw new Error('Invalid JSON file: expected { rows: string[] }');
+        }
+        if (!isCustomLevelJson(parsed)) {
+          throw new Error('Only custom levels can be loaded from file. Expected id: "custom"');
+        }
+        applyLevelJson(parsed);
+        if (exportOutput instanceof HTMLTextAreaElement) {
+          exportOutput.value = JSON.stringify(parsed, null, 2);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        alert('Load file failed: ' + msg);
+      } finally {
+        loadCustomFileInput.value = '';
+      }
+    })();
+  });
+}
+
+if (playBtn instanceof HTMLButtonElement) {
+  playBtn.addEventListener('click', () => {
+    const json = exportLevelJson();
+    localStorage.setItem(CUSTOM_LEVEL_STORAGE_KEY, json);
+    window.location.href = '/?play=custom';
   });
 }
 
