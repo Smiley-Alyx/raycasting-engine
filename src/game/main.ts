@@ -73,25 +73,61 @@ window.addEventListener(
   { once: true },
 );
 
-const levelsIndex = await loadLevelsIndex('/levels/index.json');
-const defaultLevel = levelsIndex.levels.find(
-  (l: { id: string; file: string }) => l.id === levelsIndex.default,
-);
-if (!defaultLevel) {
-  throw new Error('Default level not found in levels index');
+function hideMenu() {
+  const el = document.getElementById('menuRoot');
+  if (!(el instanceof HTMLElement)) return;
+  el.style.display = 'none';
 }
 
-const level = await loadLevel(defaultLevel.file);
-setLegend(level.legend);
-setMap(level.grid);
-setSpawn(level.spawn);
+function showMenu() {
+  const el = document.getElementById('menuRoot');
+  if (!(el instanceof HTMLElement)) return;
+  el.style.display = '';
+}
 
-setAudioConfig({
-  music: level.audio?.music ?? null,
-  sfx: DEFAULT_SFX,
-});
-playMusic();
+async function startLevelById(levelId: string) {
+  unlockAudio();
 
+  const levelsIndex = await loadLevelsIndex('/levels/index.json');
+  const levelEntry = levelsIndex.levels.find(
+    (l: { id: string; file: string }) => l.id === levelId,
+  );
+  if (!levelEntry) {
+    throw new Error('Level not found in levels index: ' + levelId);
+  }
+
+  const level = await loadLevel(levelEntry.file);
+  setLegend(level.legend);
+  setMap(level.grid);
+  setSpawn(level.spawn);
+
+  setAudioConfig({
+    music: level.audio?.music ?? null,
+    sfx: DEFAULT_SFX,
+  });
+  playMusic();
+
+  hideMenu();
+  startRayc();
+}
+
+function initMenu() {
+  showMenu();
+
+  const level1Btn = document.getElementById('menuLevel1Btn');
+  const editorBtn = document.getElementById('menuEditorBtn');
+
+  if (level1Btn instanceof HTMLButtonElement) {
+    level1Btn.addEventListener('click', () => {
+      void startLevelById('level1');
+    });
+  }
+
+  if (editorBtn instanceof HTMLButtonElement) {
+    editorBtn.addEventListener('click', () => {
+      alert('Level editor is not implemented yet');
+    });
+  }
+}
 initAudioUi();
-
-startRayc();
+initMenu();
