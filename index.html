@@ -8,9 +8,10 @@
   </head>
 
   <body>
-    <div style="display: flex; align-items: flex-start; gap: 16px; width: 100%">
-      <main id="canvas1" style="flex: 1; min-width: 0">
-        <div style="display: none">
+    <div class="app">
+      <div class="frame" id="frame">
+        <main id="canvas1" class="viewport">
+          <div style="display: none">
           <img id="wall" src="images/wall.jpg" />
           <img id="door" src="images/door.jpg" />
           <img id="window" src="images/window.jpg" />
@@ -20,37 +21,45 @@
           <img id="stand4" src="images/stand4.jpg" />
           <img id="GStand1" src="images/GStand1.jpg" />
           <img id="GStand2" src="images/GStand2.jpg" />
-        </div>
-        <script type="module" src="/src/game/main.ts"></script>
-      </main>
-      <aside style="width: 200px; flex: 0 0 200px">
-        <div>
-          Управление:
-          <hr />
-          WASD, стрелки - движение
-          <hr />
-          Shift - ускорение
-          <hr />
-          E - открыть дверь
-          <hr />
-          M - скрыть/показать карту
-          <hr />
-          <button id="fullscreenBtn" type="button">Fullscreen</button>
-          <hr />
-          <div style="display: flex; flex-direction: column; gap: 8px">
-            <button id="musicToggleBtn" type="button">Music: on</button>
-            <label>
-              Music volume
-              <input id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.5" />
-            </label>
-            <button id="sfxToggleBtn" type="button">SFX: on</button>
-            <label>
-              SFX volume
-              <input id="sfxVolume" type="range" min="0" max="1" step="0.01" value="0.7" />
-            </label>
           </div>
-        </div>
-      </aside>
+          <script type="module" src="/src/game/main.ts"></script>
+        </main>
+        <aside class="sidebar">
+          <section class="panel">
+            <h2 class="panel-title">System</h2>
+            <div class="control-group">
+              <button class="btn" id="fullscreenBtn" type="button">Fullscreen</button>
+            </div>
+          </section>
+          <section class="panel">
+            <h2 class="panel-title">Audio</h2>
+            <div class="control-group">
+              <button class="btn" id="musicToggleBtn" type="button">Music: on</button>
+              <label class="label">
+                Music volume
+                <input class="range" id="musicVolume" type="range" min="0" max="1" step="0.01" value="0.5" />
+              </label>
+              <button class="btn" id="sfxToggleBtn" type="button">SFX: on</button>
+              <label class="label">
+                SFX volume
+                <input class="range" id="sfxVolume" type="range" min="0" max="1" step="0.01" value="0.7" />
+              </label>
+            </div>
+          </section>
+          <section class="panel">
+            <h2 class="panel-title">Controls</h2>
+            <div>
+              WASD / стрелки
+              <hr />
+              Shift — спринт
+              <hr />
+              E — дверь
+              <hr />
+              M — карта
+            </div>
+          </section>
+        </aside>
+      </div>
     </div>
   </body>
 </html>

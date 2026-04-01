@@ -45,21 +45,13 @@ export function getCanvasCssHeight() {
   // canvas.width/height задаём в device-пикселях, а логический размер (CSS px)
   // сохраняем отдельно, чтобы движок мог продолжать работать в "нормальных" пикселях.
   const resizeCanvas = (): void => {
-    const sidebarWidth = 200;
-    const topOffset = 37;
-
     // В fullscreen растягиваем canvas на весь экран.
-    // В обычном режиме оставляем место под правый сайдбар и небольшой верхний отступ.
+    // В обычном режиме используем размеры контейнера.
     const isFullscreen = !!document.fullscreenElement;
 
-    const cssWidth = Math.max(
-      1,
-      isFullscreen ? window.innerWidth : window.innerWidth - sidebarWidth,
-    );
-    const cssHeight = Math.max(
-      1,
-      isFullscreen ? window.innerHeight : window.innerHeight - topOffset,
-    );
+    const rect = host.getBoundingClientRect();
+    const cssWidth = Math.max(1, isFullscreen ? window.innerWidth : Math.floor(rect.width));
+    const cssHeight = Math.max(1, isFullscreen ? window.innerHeight : Math.floor(rect.height));
     const dpr = window.devicePixelRatio || 1;
 
     canvasCssWidth = cssWidth;
