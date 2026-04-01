@@ -1,6 +1,8 @@
 import { createInput } from '../input/input';
 import {
   hitWall as hitWallState,
+  isDoorCell,
+  setCell,
   setLegend as setLegendState,
   setMap as setMapState,
 } from '../state/map-state';
@@ -46,6 +48,8 @@ export function createEngine({
   let lag = 0.0;
   const MS_PER_UPDATE = 1000 / 60;
 
+  let prevUseDown = false;
+
   function setSpawn(spawn: Spawn | null) {
     if (!spawn || typeof spawn !== 'object') return;
     if (typeof spawn.x === 'number') player.x = spawn.x;
@@ -62,6 +66,12 @@ export function createEngine({
   }
 
   function processInput(dt: number) {
+    const useDown = input.isDown('KeyE');
+    if (useDown && !prevUseDown) {
+      tryOpenDoorInFront();
+    }
+    prevUseDown = useDown;
+
     player.mov =
       input.isDown('KeyW') || input.isDown('ArrowUp')
         ? 1
@@ -89,6 +99,19 @@ export function createEngine({
     if (!hitWallState(xNew, yNew)) {
       player.x = xNew;
       player.y = yNew;
+    }
+  }
+
+  function tryOpenDoorInFront() {
+    const reach = 0.8;
+    const xProbe = player.x + reach * Math.cos(player.rot);
+    const yProbe = player.y - reach * Math.sin(player.rot);
+
+    const xMap = Math.floor(xProbe);
+    const yMap = Math.floor(yProbe);
+
+    if (isDoorCell(xMap, yMap)) {
+      setCell(xMap, yMap, 0);
     }
   }
 

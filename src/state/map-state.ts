@@ -11,6 +11,13 @@ export function getMap(): Grid | null {
   return map;
 }
 
+export function setCell(x: number, y: number, value: number): boolean {
+  if (!map || !map.length || !map[0] || !map[0].length) return false;
+  if (x < 0 || x >= map[0].length || y < 0 || y >= map.length) return false;
+  map[y][x] = value;
+  return true;
+}
+
 export function setLegend(newLegend: Legend) {
   if (!newLegend || typeof newLegend !== 'object') {
     cellLegend = {};
@@ -36,6 +43,13 @@ export function hitWall(x: number, y: number): boolean {
     return true;
   }
   return map[Math.floor(y)][Math.floor(x)] != 0;
+}
+
+export function isDoorCell(xMap: number, yMap: number): boolean {
+  if (!map) return false;
+  const cellId = map[yMap]?.[xMap];
+  if (typeof cellId !== 'number') return false;
+  return cellLegend[String(cellId)] === 'door';
 }
 
 export function getCellMaterial(xMap: number, yMap: number): string | number {
