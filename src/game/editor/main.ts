@@ -48,6 +48,40 @@ const exportBtn = document.getElementById('exportBtn');
 const exportOutput = document.getElementById('exportOutput');
 const backBtn = document.getElementById('backToGameBtn');
 
+let legend: Record<number, string> = {
+  0: 'empty',
+  1: 'wall',
+  6: 'door',
+};
+
+function updatePalette() {
+  if (!(tileSelect instanceof HTMLSelectElement)) return;
+  const prev = tileSelect.value;
+  tileSelect.innerHTML = '';
+
+  const keys = Object.keys(legend)
+    .map((k) => Number(k))
+    .filter((k) => Number.isFinite(k))
+    .sort((a, b) => a - b);
+
+  for (const k of keys) {
+    const opt = document.createElement('option');
+    opt.value = String(k);
+    opt.textContent = `${k} — ${legend[k] ?? ''}`;
+    tileSelect.appendChild(opt);
+  }
+
+  if (keys.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '0';
+    opt.textContent = '0 — empty';
+    tileSelect.appendChild(opt);
+  }
+
+  tileSelect.value = prev && tileSelect.querySelector(`option[value="${prev}"]`) ? prev : '1';
+  if (!tileSelect.value) tileSelect.value = '0';
+}
+
 function readInt(el: HTMLElement | null, fallback: number) {
   if (!(el instanceof HTMLInputElement)) return fallback;
   const v = Number(el.value);
@@ -110,9 +144,8 @@ function resizeCanvas() {
 
 function tileToColor(tile: number) {
   if (tile === 0) return '#0b0c10';
-  if (tile === 1) return '#6b4a2b';
-  if (tile === 6) return '#3a8fb7';
-  return '#a23b72';
+  const hue = (tile * 47) % 360;
+  return `hsl(${hue} 45% 35%)`;
 }
 
 function draw() {
@@ -202,6 +235,7 @@ if (resizeMapBtn instanceof HTMLButtonElement) {
 
 type LevelJson = {
   rows: string[];
+  legend?: Record<string, string>;
 };
 
 async function loadLevelJson(path: string): Promise<LevelJson> {
@@ -216,6 +250,15 @@ if (loadLevel1Btn instanceof HTMLButtonElement) {
   loadLevel1Btn.addEventListener('click', () => {
     void (async () => {
       const level = await loadLevelJson('/levels/level1.json');
+      if (level.legend) {
+        const nextLegend: Record<number, string> = {};
+        for (const [k, v] of Object.entries(level.legend)) {
+          const n = Number(k);
+          if (Number.isFinite(n)) nextLegend[n] = v;
+        }
+        legend = nextLegend;
+        updatePalette();
+      }
       setGridFromRows(level.rows);
     })();
   });
@@ -232,11 +275,7 @@ function exportLevelJson() {
   const levelJson = {
     id: 'custom',
     name: 'Custom',
-    legend: {
-      0: 'empty',
-      1: 'wall',
-      6: 'door',
-    },
+    legend,
     audio: {
       music: null,
     },
@@ -263,6 +302,7 @@ if (backBtn instanceof HTMLButtonElement) {
 }
 
 resizeCanvas();
+updatePalette();
 window.addEventListener('resize', () => {
   resizeCanvas();
 });
