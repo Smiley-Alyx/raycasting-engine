@@ -105,6 +105,31 @@ export function playMusic() {
   audio.playMusic();
 }
 
+export function setMusicEnabled(enabled: boolean) {
+  audio.setMusicEnabled(enabled);
+}
+
+export function setSfxEnabled(enabled: boolean) {
+  audio.setSfxEnabled(enabled);
+}
+
+export function setMusicVolume(volume: number) {
+  audio.setMusicVolume(volume);
+}
+
+export function setSfxVolume(volume: number) {
+  audio.setSfxVolume(volume);
+}
+
+export function getAudioState() {
+  return {
+    musicEnabled: audio.getMusicEnabled(),
+    sfxEnabled: audio.getSfxEnabled(),
+    musicVolume: audio.getMusicVolume(),
+    sfxVolume: audio.getSfxVolume(),
+  };
+}
+
 export function startRayc() {
   ensureEngine().start();
 }
