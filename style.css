@@ -53,6 +53,10 @@ body {
   background: #000;
 }
 
+.viewport canvas {
+  display: block;
+}
+
 .menu {
   position: absolute;
   inset: 0;
@@ -151,6 +155,9 @@ body {
 
 .range {
   width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
 }
 
 .help-list {

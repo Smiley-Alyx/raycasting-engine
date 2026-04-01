@@ -11,21 +11,52 @@
     <div class="app">
       <div class="frame" id="frame">
         <main id="editorRoot" class="viewport">
-          <div class="menu" id="editorOverlay">
-            <div class="menu-box">
-              <div class="menu-title">Editor</div>
-              <div class="menu-subtitle">Work in progress</div>
-              <div class="menu-buttons">
-                <button class="btn" id="backToGameBtn" type="button">Back</button>
-              </div>
-            </div>
+          <div style="display: none">
+            <img id="wall" src="images/wall.jpg" />
+            <img id="door" src="images/door.jpg" />
+            <img id="window" src="images/window.jpg" />
+            <img id="stand1" src="images/stand1.jpg" />
+            <img id="stand2" src="images/stand2.jpg" />
+            <img id="stand3" src="images/stand3.jpg" />
+            <img id="stand4" src="images/stand4.jpg" />
+            <img id="GStand1" src="images/GStand1.jpg" />
+            <img id="GStand2" src="images/GStand2.jpg" />
+            <img id="GStand3" src="images/GStand3.jpg" />
           </div>
           <script type="module" src="/src/game/editor/main.ts"></script>
         </main>
         <aside class="sidebar">
           <section class="panel">
             <h2 class="panel-title">Editor</h2>
-            <div class="hint">Заглушка редактора. Дальше будет вид сверху, кисть, размер карты.</div>
+            <div class="control-group">
+              <label class="label">
+                Width
+                <input id="mapWidthInput" class="range" type="number" min="4" max="128" step="1" value="32" />
+              </label>
+              <label class="label">
+                Height
+                <input id="mapHeightInput" class="range" type="number" min="4" max="128" step="1" value="24" />
+              </label>
+              <button class="btn" id="resizeMapBtn" type="button">Resize map</button>
+              <hr />
+              <label class="label">
+                Brush
+                <select id="tileSelect" class="range">
+                  <option value="0">0 — Empty</option>
+                  <option value="1">1 — Wall</option>
+                  <option value="6">6 — Door</option>
+                </select>
+              </label>
+              <button class="btn" id="clearMapBtn" type="button">Clear</button>
+              <hr />
+              <button class="btn" id="exportBtn" type="button">Export JSON</button>
+              <label class="label">
+                Output
+                <textarea id="exportOutput" class="range" rows="10" spellcheck="false"></textarea>
+              </label>
+              <hr />
+              <button class="btn" id="backToGameBtn" type="button">Back</button>
+            </div>
           </section>
         </aside>
       </div>
