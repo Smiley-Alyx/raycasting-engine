@@ -3,6 +3,22 @@ if (!editorRoot) {
   throw new Error('Missing #editorRoot element');
 }
 
+function cellAtClient(clientX: number, clientY: number) {
+  const rect = root.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+  const cell = Math.max(6, Math.floor(Math.min(w / mapW, h / mapH)));
+  const gridW = cell * mapW;
+  const gridH = cell * mapH;
+  const offsetX = Math.floor((w - gridW) / 2);
+  const offsetY = Math.floor((h - gridH) / 2);
+
+  const x = Math.floor((clientX - rect.left - offsetX) / cell);
+  const y = Math.floor((clientY - rect.top - offsetY) / cell);
+  if (x < 0 || y < 0 || x >= mapW || y >= mapH) return null;
+  return { x, y };
+}
+
 function setGridFromRows(rows: string[]) {
   const h = rows.length;
   const w = rows[0]?.length ?? 0;
@@ -46,6 +62,7 @@ const tileSelect = document.getElementById('tileSelect');
 const clearMapBtn = document.getElementById('clearMapBtn');
 const exportBtn = document.getElementById('exportBtn');
 const exportOutput = document.getElementById('exportOutput');
+const spawnReadout = document.getElementById('spawnReadout');
 const backBtn = document.getElementById('backToGameBtn');
 
 let legend: Record<number, string> = {
@@ -101,6 +118,13 @@ function setIntInput(el: HTMLElement | null, value: number) {
 
 let mapW = readInt(mapWidthInput as HTMLElement | null, 32);
 let mapH = readInt(mapHeightInput as HTMLElement | null, 24);
+
+let spawn: { x: number; y: number; rot: number } = { x: 2.5, y: 2.5, rot: 0 };
+
+function updateSpawnReadout() {
+  if (!(spawnReadout instanceof HTMLElement)) return;
+  spawnReadout.textContent = `Spawn: x=${spawn.x.toFixed(2)} y=${spawn.y.toFixed(2)} rot=${spawn.rot.toFixed(2)}`;
+}
 
 let grid: number[][] = [];
 
@@ -185,6 +209,13 @@ function draw() {
     ctx2d.lineTo(offsetX + gridW, py);
   }
   ctx2d.stroke();
+
+  const spawnX = offsetX + (spawn.x - 0.5) * cell;
+  const spawnY = offsetY + (spawn.y - 0.5) * cell;
+  ctx2d.fillStyle = '#f3d27a';
+  ctx2d.beginPath();
+  ctx2d.arc(spawnX + cell / 2, spawnY + cell / 2, Math.max(3, cell * 0.18), 0, Math.PI * 2);
+  ctx2d.fill();
 }
 
 let painting = false;
@@ -207,6 +238,16 @@ function paintAtClient(clientX: number, clientY: number) {
 }
 
 canvas.addEventListener('pointerdown', (e: PointerEvent) => {
+  if (e.shiftKey) {
+    const cell = cellAtClient(e.clientX, e.clientY);
+    if (cell) {
+      spawn = { x: cell.x + 0.5, y: cell.y + 0.5, rot: 0 };
+      updateSpawnReadout();
+    }
+    painting = false;
+    return;
+  }
+
   painting = true;
   canvas.setPointerCapture(e.pointerId);
   paintAtClient(e.clientX, e.clientY);
@@ -236,6 +277,7 @@ if (resizeMapBtn instanceof HTMLButtonElement) {
 type LevelJson = {
   rows: string[];
   legend?: Record<string, string>;
+  spawn?: { x: number; y: number; rot: number };
 };
 
 async function loadLevelJson(path: string): Promise<LevelJson> {
@@ -259,6 +301,10 @@ if (loadLevel1Btn instanceof HTMLButtonElement) {
         legend = nextLegend;
         updatePalette();
       }
+      if (level.spawn) {
+        spawn = level.spawn;
+        updateSpawnReadout();
+      }
       setGridFromRows(level.rows);
     })();
   });
@@ -279,7 +325,7 @@ function exportLevelJson() {
     audio: {
       music: null,
     },
-    spawn: { x: 2, y: 2, rot: 0 },
+    spawn,
     rows,
   };
   return JSON.stringify(levelJson, null, 2);
@@ -303,6 +349,7 @@ if (backBtn instanceof HTMLButtonElement) {
 
 resizeCanvas();
 updatePalette();
+updateSpawnReadout();
 window.addEventListener('resize', () => {
   resizeCanvas();
 });
