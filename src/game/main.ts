@@ -7,6 +7,7 @@ import {
   setAudioConfig,
   unlockAudio,
   playMusic,
+  stopRayc,
   getAudioState,
   setMusicEnabled,
   setSfxEnabled,
@@ -85,6 +86,8 @@ function showMenu() {
   el.style.display = '';
 }
 
+let running = false;
+
 async function startLevelById(levelId: string) {
   unlockAudio();
 
@@ -109,6 +112,7 @@ async function startLevelById(levelId: string) {
 
   hideMenu();
   startRayc();
+  running = true;
 }
 
 function initMenu() {
@@ -129,5 +133,13 @@ function initMenu() {
     });
   }
 }
+
+window.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.code !== 'Escape' || e.repeat) return;
+  if (!running) return;
+  stopRayc();
+  showMenu();
+  running = false;
+});
 initAudioUi();
 initMenu();
