@@ -3,12 +3,17 @@ import { createEngine } from '../engine/engine';
 import { getCanvas, getCanvasCssHeight, getCanvasCssWidth, getCtx } from '../canvas-init';
 import { createInput } from '../input/input';
 import { createRenderer } from './render/renderer';
+import { AudioManager } from './audio/audio-manager';
+import { DEFAULT_SFX } from './audio/sfx-config';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
 type PlayerInstance = Player;
 
 let engine: EngineInstance | null = null;
+
+const audio = new AudioManager();
+audio.setSfxSources(DEFAULT_SFX);
 
 const player: PlayerInstance = {
   x: 46,
@@ -52,7 +57,19 @@ function ensureEngine() {
   }
 
   const renderer = createRenderer({ ctx, getViewWidth, getViewHeight, player });
-  engine = createEngine({ ctx, getViewWidth, getViewHeight, player, input, renderer });
+  engine = createEngine({
+    ctx,
+    getViewWidth,
+    getViewHeight,
+    player,
+    input,
+    renderer,
+    events: {
+      onDoorOpen: () => {
+        audio.playSfx('doorOpen');
+      },
+    },
+  });
   return engine;
 }
 
@@ -67,6 +84,25 @@ export function setSpawn(spawn: Spawn | null) {
 
 export function setLegend(newLegend: Legend) {
   ensureEngine().setLegend(newLegend);
+}
+
+export function setAudioConfig({
+  music,
+  sfx,
+}: {
+  music: Parameters<AudioManager['setMusic']>[0];
+  sfx: Parameters<AudioManager['setSfxSources']>[0];
+}) {
+  audio.setMusic(music);
+  audio.setSfxSources(sfx ?? DEFAULT_SFX);
+}
+
+export function unlockAudio() {
+  audio.unlock();
+}
+
+export function playMusic() {
+  audio.playMusic();
 }
 
 export function startRayc() {

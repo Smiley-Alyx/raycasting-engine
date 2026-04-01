@@ -20,6 +20,10 @@ type Renderer = {
   drawMap: () => void;
 };
 
+type EngineEvents = {
+  onDoorOpen?: (xMap: number, yMap: number) => void;
+};
+
 export function createEngine({
   ctx,
   getViewWidth,
@@ -27,6 +31,7 @@ export function createEngine({
   player,
   input,
   renderer,
+  events,
 }: {
   ctx: CanvasRenderingContext2D;
   getViewWidth: () => number;
@@ -34,6 +39,7 @@ export function createEngine({
   player: Player;
   input: Input;
   renderer: Renderer;
+  events?: EngineEvents;
 }) {
   let started = false;
   let rafId: number | null = null;
@@ -106,6 +112,7 @@ export function createEngine({
 
     if (isDoorCell(xMap, yMap)) {
       setCell(xMap, yMap, 0);
+      events?.onDoorOpen?.(xMap, yMap);
     }
   }
 

@@ -1,9 +1,23 @@
 import type { Legend, Spawn } from '../../types/game';
 
+type LevelAudioConfig = {
+  music?: {
+    src: string;
+    loop?: boolean;
+    volume?: number;
+  };
+  sfx?: {
+    doorOpen?: string;
+    footstep?: string;
+    shoot?: string;
+  };
+};
+
 type LevelJson = {
   id?: string;
   name?: string;
   legend?: Legend;
+  audio?: unknown;
   rows: string[];
   spawn?: unknown;
 };
@@ -58,12 +72,45 @@ export async function loadLevel(levelUrl: string) {
     }
   }
 
+  let audio: LevelAudioConfig | undefined;
+  if (data.audio && typeof data.audio === 'object') {
+    const a = data.audio as {
+      music?: unknown;
+      sfx?: unknown;
+    };
+
+    const cfg: LevelAudioConfig = {};
+
+    if (a.music && typeof a.music === 'object') {
+      const m = a.music as { src?: unknown; loop?: unknown; volume?: unknown };
+      if (typeof m.src === 'string') {
+        cfg.music = {
+          src: m.src,
+          loop: typeof m.loop === 'boolean' ? m.loop : undefined,
+          volume: typeof m.volume === 'number' ? m.volume : undefined,
+        };
+      }
+    }
+
+    if (a.sfx && typeof a.sfx === 'object') {
+      const s = a.sfx as { doorOpen?: unknown; footstep?: unknown; shoot?: unknown };
+      cfg.sfx = {
+        doorOpen: typeof s.doorOpen === 'string' ? s.doorOpen : undefined,
+        footstep: typeof s.footstep === 'string' ? s.footstep : undefined,
+        shoot: typeof s.shoot === 'string' ? s.shoot : undefined,
+      };
+    }
+
+    if (cfg.music || cfg.sfx) audio = cfg;
+  }
+
   return {
     id: data.id,
     name: data.name,
     legend: data.legend ?? {},
     grid,
     spawn,
+    audio,
   };
 }
 
