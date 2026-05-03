@@ -90,6 +90,7 @@ function updateEnemies(dt: number) {
       if (enemyDamageCooldownMs <= 0 && dist < 1.35 && hasLineOfSight(e.x, e.y, player.x, player.y)) {
         const dmg = 5;
         player.hp = Math.max(0, player.hp - dmg);
+        audio.playSfx('damage');
         renderer?.triggerDamagePulse();
         enemyDamageCooldownMs = 650;
         if (player.hp <= 0) {
