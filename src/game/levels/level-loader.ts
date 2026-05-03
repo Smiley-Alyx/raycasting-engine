@@ -33,8 +33,16 @@ type LevelsIndexJson = {
   default: string;
 };
 
+function resolvePublicUrl(path: string): string {
+  if (typeof path !== 'string') return path;
+  if (path.startsWith('/')) {
+    return new URL(path.slice(1), import.meta.env.BASE_URL).toString();
+  }
+  return new URL(path, import.meta.env.BASE_URL).toString();
+}
+
 export async function loadLevel(levelUrl: string) {
-  const res = await fetch(levelUrl);
+  const res = await fetch(resolvePublicUrl(levelUrl));
   if (!res.ok) {
     throw new Error('Failed to load level: ' + levelUrl);
   }
@@ -90,7 +98,7 @@ export async function loadLevel(levelUrl: string) {
       const m = a.music as { src?: unknown; loop?: unknown; volume?: unknown };
       if (typeof m.src === 'string') {
         cfg.music = {
-          src: m.src,
+          src: resolvePublicUrl(m.src),
           loop: typeof m.loop === 'boolean' ? m.loop : undefined,
           volume: typeof m.volume === 'number' ? m.volume : undefined,
         };
@@ -100,9 +108,9 @@ export async function loadLevel(levelUrl: string) {
     if (a.sfx && typeof a.sfx === 'object') {
       const s = a.sfx as { doorOpen?: unknown; footstep?: unknown; shoot?: unknown };
       cfg.sfx = {
-        doorOpen: typeof s.doorOpen === 'string' ? s.doorOpen : undefined,
-        footstep: typeof s.footstep === 'string' ? s.footstep : undefined,
-        shoot: typeof s.shoot === 'string' ? s.shoot : undefined,
+        doorOpen: typeof s.doorOpen === 'string' ? resolvePublicUrl(s.doorOpen) : undefined,
+        footstep: typeof s.footstep === 'string' ? resolvePublicUrl(s.footstep) : undefined,
+        shoot: typeof s.shoot === 'string' ? resolvePublicUrl(s.shoot) : undefined,
       };
     }
 
@@ -135,7 +143,7 @@ export async function loadLevel(levelUrl: string) {
 }
 
 export async function loadLevelsIndex(indexUrl: string) {
-  const res = await fetch(indexUrl);
+  const res = await fetch(resolvePublicUrl(indexUrl));
   if (!res.ok) {
     throw new Error('Failed to load levels index: ' + indexUrl);
   }

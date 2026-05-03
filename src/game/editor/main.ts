@@ -362,7 +362,10 @@ function isCustomLevelJson(level: LevelJson) {
 }
 
 async function loadLevelJson(path: string): Promise<LevelJson> {
-  const res = await fetch(path);
+  const url = path.startsWith('/')
+    ? new URL(path.slice(1), import.meta.env.BASE_URL).toString()
+    : new URL(path, import.meta.env.BASE_URL).toString();
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error('Failed to load level: ' + path);
   }
@@ -495,13 +498,13 @@ if (playBtn instanceof HTMLButtonElement) {
   playBtn.addEventListener('click', () => {
     const json = exportLevelJson();
     localStorage.setItem(CUSTOM_LEVEL_STORAGE_KEY, json);
-    window.location.href = '/?play=custom';
+    window.location.href = new URL('?play=custom', import.meta.env.BASE_URL).toString();
   });
 }
 
 if (backBtn instanceof HTMLButtonElement) {
   backBtn.addEventListener('click', () => {
-    window.location.href = '/';
+    window.location.href = import.meta.env.BASE_URL;
   });
 }
 

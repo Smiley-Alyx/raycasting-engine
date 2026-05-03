@@ -374,7 +374,7 @@ function initMenu() {
 
   if (editorBtn instanceof HTMLButtonElement) {
     editorBtn.addEventListener('click', () => {
-      window.location.href = '/editor.html';
+      window.location.href = new URL('editor.html', import.meta.env.BASE_URL).toString();
     });
   }
 }
