@@ -7,11 +7,13 @@ export function createRenderer({
   getViewWidth,
   getViewHeight,
   player,
+  getEnemies,
 }: {
   ctx: CanvasRenderingContext2D;
   getViewWidth: () => number;
   getViewHeight: () => number;
   player: Player;
+  getEnemies?: () => Array<{ x: number; y: number; alive: boolean }>;
 }) {
   let ceilingColor = '#E3E3E1';
   let floorColor = '#858585';
@@ -120,6 +122,59 @@ export function createRenderer({
     ctx.drawImage(texture, texX, 0, 1, 512, x, viewHeight / 2 - sliceHeight / 2, 1, sliceHeight);
   }
 
+  function drawSprites(zBuffer: Float64Array) {
+    const enemies = typeof getEnemies === 'function' ? getEnemies() : [];
+    if (!enemies.length) return;
+
+    const w = getViewWidth();
+    const h = getViewHeight();
+
+    const texture = getTextureForMaterial('enemy');
+    if (!texture) return;
+
+    const distanceProjectionPlane = w / 2 / Math.tan(player.fov / 2);
+
+    const list = enemies
+      .filter((e) => e.alive)
+      .map((e) => {
+        const dx = e.x - player.x;
+        const dy = e.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        // World uses y down; player forward is (cos(rot), -sin(rot)).
+        const angle = Math.atan2(player.y - e.y, e.x - player.x);
+        let rel = angle - player.rot;
+        rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+        return { e, dist, rel };
+      })
+      // back-to-front
+      .sort((a, b) => b.dist - a.dist);
+
+    for (const item of list) {
+      if (item.dist <= 0.001) continue;
+      if (Math.abs(item.rel) > player.fov / 2 + 0.2) continue;
+
+      const spriteHeight = (1 / item.dist) * distanceProjectionPlane;
+      const spriteWidth = spriteHeight;
+      const screenX = (0.5 + item.rel / player.fov) * w;
+      const x0 = Math.floor(screenX - spriteWidth / 2);
+      const x1 = Math.floor(screenX + spriteWidth / 2);
+      const y0 = Math.floor(h / 2 - spriteHeight / 2);
+
+      const texW = texture.width || 1;
+      const texH = texture.height || 1;
+
+      for (let x = x0; x <= x1; x++) {
+        if (x < 0 || x >= w) continue;
+        const z = zBuffer[x];
+        if (z !== 0 && item.dist > z) continue;
+
+        const u = (x - x0) / Math.max(1, x1 - x0);
+        const sx = Math.floor(u * texW);
+        ctx.drawImage(texture, sx, 0, 1, texH, x, y0, 1, spriteHeight);
+      }
+    }
+  }
+
   function drawMap() {
     const map = getMap();
     if (!map) return;
@@ -143,6 +198,7 @@ export function createRenderer({
     drawBackground,
     drawRay,
     drawMap,
+    drawSprites,
     setBackgroundColors,
     triggerFlash,
     triggerDamagePulse,

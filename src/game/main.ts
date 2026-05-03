@@ -15,6 +15,7 @@ import {
   setMusicVolume,
   setSfxVolume,
   getPlayer,
+  setEnemies,
 } from './rayc';
 import { loadLevel, loadLevelsIndex } from './levels/level-loader';
 import { DEFAULT_SFX } from './audio/sfx-config';
@@ -80,17 +81,16 @@ function placeRandomEnemies({
   player: ReturnType<typeof getPlayer>;
   enemyCellId: number;
 }) {
-  const g = cloneGrid(grid);
   const visible = computeInitialVisibleCells({
-    grid: g,
+    grid,
     x: player.x,
     y: player.y,
     rot: player.rot,
     fov: player.fov,
   });
 
-  const w = g[0]?.length ?? 0;
-  const h = g.length;
+  const w = grid[0]?.length ?? 0;
+  const h = grid.length;
   const approxCount = Math.floor((w * h) / 120);
   const count = Math.max(4, Math.min(14, approxCount));
 
@@ -98,19 +98,21 @@ function placeRandomEnemies({
   let placed = 0;
   let attempts = 0;
 
+  const result: Array<{ x: number; y: number }> = [];
+
   while (placed < count && attempts < 2000) {
     attempts++;
     const x = 1 + Math.floor(Math.random() * Math.max(1, w - 2));
     const y = 1 + Math.floor(Math.random() * Math.max(1, h - 2));
-    if (g[y][x] !== 0) continue;
+    if (grid[y][x] !== 0) continue;
     if (visible.has(`${x},${y}`)) continue;
     const dist = Math.hypot(player.x - (x + 0.5), player.y - (y + 0.5));
     if (dist < minSpawnDist) continue;
-    g[y][x] = enemyCellId;
+    result.push({ x: x + 0.5, y: y + 0.5 });
     placed++;
   }
 
-  return g;
+  return result;
 }
 
 function initAudioUi() {
@@ -261,20 +263,13 @@ async function startLevelById(levelId: string) {
   }
 
   const level = await loadLevel(levelEntry.file);
-  const legendWithEnemy = { ...level.legend, 9: 'enemy' };
-  setLegend(legendWithEnemy);
+  setLegend(level.legend);
   setMap(level.grid);
   setSpawn(level.spawn);
   setBackgroundColors(level.colors);
 
   const p = getPlayer();
-  setMap(
-    placeRandomEnemies({
-      grid: level.grid,
-      player: p,
-      enemyCellId: 9,
-    }),
-  );
+  setEnemies(placeRandomEnemies({ grid: level.grid, player: p, enemyCellId: 9 }));
 
   setAudioConfig({
     music: level.audio?.music ?? null,
@@ -331,15 +326,14 @@ async function maybeStartCustomFromEditor() {
   const level = parseCustomLevelJson(raw);
 
   const baseLegend = level.legend as unknown as Record<string, string>;
-  const legendWithEnemy = { ...baseLegend, 9: 'enemy' };
-  setLegend(legendWithEnemy as unknown as Record<number, string>);
+  setLegend(baseLegend as unknown as Record<number, string>);
   const grid = level.rows.map((row) => row.split('').map((c) => Number(c) || 0));
   setMap(grid);
   setSpawn(level.spawn);
   setBackgroundColors(level.colors ?? {});
 
   const p = getPlayer();
-  setMap(placeRandomEnemies({ grid, player: p, enemyCellId: 9 }));
+  setEnemies(placeRandomEnemies({ grid, player: p, enemyCellId: 9 }));
 
   setAudioConfig({
     music: level.audio?.music ?? null,

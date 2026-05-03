@@ -5,6 +5,7 @@ import { createInput } from '../input/input';
 import { createRenderer } from './render/renderer';
 import { AudioManager } from './audio/audio-manager';
 import { DEFAULT_SFX } from './audio/sfx-config';
+import { hitWall } from '../state/map-state';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
@@ -14,6 +15,118 @@ type PlayerInstance = Player;
 
 let engine: EngineInstance | null = null;
 let renderer: RendererInstance | null = null;
+
+type Enemy = {
+  x: number;
+  y: number;
+  alive: boolean;
+  alerted: boolean;
+};
+
+let enemies: Enemy[] = [];
+
+export function setEnemies(next: Array<{ x: number; y: number }>) {
+  enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false }));
+}
+
+export function getEnemies() {
+  return enemies;
+}
+
+function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number): boolean {
+  const dx = xTo - xFrom;
+  const dy = yTo - yFrom;
+  const dist = Math.hypot(dx, dy);
+  if (dist <= 0.0001) return true;
+  const step = 0.12;
+  const nx = dx / dist;
+  const ny = dy / dist;
+  for (let d = 0.25; d < dist; d += step) {
+    const x = xFrom + nx * d;
+    const y = yFrom + ny * d;
+    if (hitWall(x, y)) return false;
+  }
+  return true;
+}
+
+let enemyDamageCooldownMs = 0;
+
+function updateEnemies(dt: number) {
+  enemyDamageCooldownMs = Math.max(0, enemyDamageCooldownMs - dt * 1000);
+
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const dist = Math.hypot(player.x - e.x, player.y - e.y);
+
+    if (!e.alerted) {
+      if (dist < 8 && hasLineOfSight(e.x, e.y, player.x, player.y)) {
+        e.alerted = true;
+      }
+    }
+
+    if (e.alerted) {
+      const speed = 0.85;
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const step = speed * dt;
+      const nx = dx / len;
+      const ny = dy / len;
+
+      const xTry = e.x + nx * step;
+      const yTry = e.y + ny * step;
+
+      // Simple collision: try full move, then axis moves.
+      if (!hitWall(xTry, yTry)) {
+        e.x = xTry;
+        e.y = yTry;
+      } else if (!hitWall(xTry, e.y)) {
+        e.x = xTry;
+      } else if (!hitWall(e.x, yTry)) {
+        e.y = yTry;
+      }
+
+      // Damage when close and with LoS.
+      if (enemyDamageCooldownMs <= 0 && dist < 1.35 && hasLineOfSight(e.x, e.y, player.x, player.y)) {
+        const dmg = 5;
+        player.hp = Math.max(0, player.hp - dmg);
+        renderer?.triggerDamagePulse();
+        enemyDamageCooldownMs = 650;
+        if (player.hp <= 0) {
+          renderer?.triggerKillFill();
+        }
+      }
+    }
+  }
+}
+
+function tryShootEnemies() {
+  const maxDist = 10;
+  const halfAngle = (3 * Math.PI) / 180;
+
+  let best: { e: Enemy; dist: number } | null = null;
+
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxDist) continue;
+
+    const angle = Math.atan2(player.y - e.y, e.x - player.x);
+    let rel = angle - player.rot;
+    rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+    if (Math.abs(rel) > halfAngle) continue;
+    if (!hasLineOfSight(player.x, player.y, e.x, e.y)) continue;
+
+    if (!best || dist < best.dist) best = { e, dist };
+  }
+
+  if (best) {
+    best.e.alive = false;
+    renderer?.triggerKillFill();
+  }
+}
 
 const audio = new AudioManager();
 audio.setSfxSources(DEFAULT_SFX);
@@ -61,7 +174,13 @@ function ensureEngine() {
     throw new Error('Canvas context is not initialized. Did you import canvas-init first?');
   }
 
-  renderer = createRenderer({ ctx, getViewWidth, getViewHeight, player });
+  renderer = createRenderer({
+    ctx,
+    getViewWidth,
+    getViewHeight,
+    player,
+    getEnemies: () => enemies,
+  });
   engine = createEngine({
     ctx,
     getViewWidth,
@@ -79,16 +198,10 @@ function ensureEngine() {
       onShoot: () => {
         audio.playSfx('shoot');
         renderer?.triggerFlash();
+        tryShootEnemies();
       },
-      onEnemyKilled: () => {
-        audio.playSfx('shoot');
-        renderer?.triggerKillFill();
-      },
-      onPlayerDamaged: () => {
-        renderer?.triggerDamagePulse();
-      },
-      onPlayerDied: () => {
-        renderer?.triggerKillFill();
+      onTick: (dt: number) => {
+        updateEnemies(dt);
       },
     },
   });

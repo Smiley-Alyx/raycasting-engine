@@ -14,18 +14,21 @@ export function castRays({
   getViewWidth: () => number;
   addRotToAngle: AddRotToAngle;
   drawRay: DrawRay;
-}) {
+}): { zBuffer: Float64Array } {
   const map = getMap();
-  if (!map) return;
+  if (!map) return { zBuffer: new Float64Array(0) };
 
   const viewWidth = getViewWidth();
+  const zBuffer = new Float64Array(viewWidth);
   const angleBetweenRays = ((player.fov * 180) / Math.PI / viewWidth) * (Math.PI / 180);
 
   let angle = addRotToAngle(player.fov / 2, player.rot);
   for (let i = 0; i < viewWidth; i++) {
-    castSingleRay({ player, map, angle, row: i, drawRay });
+    zBuffer[i] = castSingleRay({ player, map, angle, row: i, drawRay });
     angle = addRotToAngle(-angleBetweenRays, angle);
   }
+
+  return { zBuffer };
 }
 
 function castSingleRay({
@@ -132,4 +135,6 @@ function castSingleRay({
 
   dist = dist * Math.cos(player.rot - angle);
   drawRay(dist, row, offset, img);
+
+  return dist;
 }
