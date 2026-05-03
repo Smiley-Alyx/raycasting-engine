@@ -54,6 +54,9 @@ export function isDoorCell(xMap: number, yMap: number): boolean {
 
 export function getCellMaterial(xMap: number, yMap: number): string | number {
   if (!map) return 0;
-  const cellId = map[yMap][xMap];
+  const row = map[yMap];
+  if (!row) return 0;
+  const cellId = row[xMap];
+  if (typeof cellId !== 'number') return 0;
   return cellLegend[String(cellId)] || cellId;
 }
