@@ -100,6 +100,11 @@ export function setBackgroundColors(colors: { ceiling?: string; floor?: string }
   renderer?.setBackgroundColors(colors);
 }
 
+export function triggerDeathOverlay() {
+  ensureEngine();
+  renderer?.triggerKillFill();
+}
+
 export function setMap(newMap: Grid) {
   ensureEngine().setMap(newMap);
 }

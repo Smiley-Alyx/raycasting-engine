@@ -57,6 +57,20 @@ body {
   display: block;
 }
 
+.blood-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(120, 0, 0);
+  opacity: 0;
+  transition: opacity 2s linear;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.blood-overlay.is-active {
+  opacity: 0.65;
+}
+
 .menu {
   position: absolute;
   inset: 0;

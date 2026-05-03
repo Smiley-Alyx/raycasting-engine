@@ -14,15 +14,26 @@ import {
   setSfxEnabled,
   setMusicVolume,
   setSfxVolume,
+  getPlayer,
 } from './rayc';
 import { loadLevel, loadLevelsIndex } from './levels/level-loader';
 import { DEFAULT_SFX } from './audio/sfx-config';
-import { getPlayer } from './rayc';
 
 const CUSTOM_LEVEL_STORAGE_KEY = 'rayc.customLevel';
 
 function cloneGrid(grid: number[][]) {
   return grid.map((row) => row.slice());
+}
+
+function initDeathUi() {
+  const restartBtn = document.getElementById('deathRestartBtn');
+  if (restartBtn instanceof HTMLButtonElement) {
+    restartBtn.addEventListener('click', () => {
+      // Simplest robust restart: reload page.
+      window.location.href = '/';
+      window.location.reload();
+    });
+  }
 }
 
 function computeInitialVisibleCells({
@@ -186,9 +197,60 @@ function showMenu() {
 }
 
 let running = false;
+let dead = false;
+let deathTimer: number | null = null;
+
+function showBloodOverlay() {
+  const el = document.getElementById('bloodOverlay');
+  if (!(el instanceof HTMLElement)) return;
+  el.style.display = '';
+  // Force layout so transition triggers reliably.
+  void el.offsetWidth;
+  el.classList.add('is-active');
+}
+
+function hideBloodOverlay() {
+  const el = document.getElementById('bloodOverlay');
+  if (!(el instanceof HTMLElement)) return;
+  el.classList.remove('is-active');
+  el.style.display = 'none';
+}
+
+function showDeathScreen() {
+  const el = document.getElementById('deathRoot');
+  if (!(el instanceof HTMLElement)) return;
+  el.style.display = '';
+}
+
+function hideDeathScreen() {
+  const el = document.getElementById('deathRoot');
+  if (!(el instanceof HTMLElement)) return;
+  el.style.display = 'none';
+}
+
+function enterDeathState() {
+  if (dead) return;
+  dead = true;
+
+  stopRayc();
+  running = false;
+
+  showBloodOverlay();
+
+  // Ensure strong red overlay (renderer already triggers it from engine event).
+  if (deathTimer !== null) window.clearTimeout(deathTimer);
+  deathTimer = window.setTimeout(() => {
+    showDeathScreen();
+  }, 2000);
+}
 
 async function startLevelById(levelId: string) {
   unlockAudio();
+
+  dead = false;
+  if (deathTimer !== null) window.clearTimeout(deathTimer);
+  hideDeathScreen();
+  hideBloodOverlay();
 
   const levelsIndex = await loadLevelsIndex('/levels/index.json');
   const levelEntry = levelsIndex.levels.find(
@@ -261,6 +323,11 @@ async function maybeStartCustomFromEditor() {
   const raw = localStorage.getItem(CUSTOM_LEVEL_STORAGE_KEY);
   if (!raw) return;
 
+  dead = false;
+  if (deathTimer !== null) window.clearTimeout(deathTimer);
+  hideDeathScreen();
+  hideBloodOverlay();
+
   const level = parseCustomLevelJson(raw);
 
   const baseLegend = level.legend as unknown as Record<string, string>;
@@ -287,6 +354,7 @@ async function maybeStartCustomFromEditor() {
 
 function initMenu() {
   showMenu();
+  hideDeathScreen();
 
   const levelsRoot = document.getElementById('menuLevels');
   const editorBtn = document.getElementById('menuEditorBtn');
@@ -320,6 +388,7 @@ function initMenu() {
 window.addEventListener('keydown', (e: KeyboardEvent) => {
   if (e.code !== 'Escape' || e.repeat) return;
   if (!running) return;
+  if (dead) return;
   stopRayc();
   showMenu();
   running = false;
@@ -333,5 +402,15 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
 });
 initAudioUi();
 initHpUi();
+initDeathUi();
 initMenu();
 void maybeStartCustomFromEditor();
+
+// Watch HP and enter death state.
+requestAnimationFrame(function watchDeath() {
+  const p = getPlayer();
+  if (!dead && running && p.hp <= 0) {
+    enterDeathState();
+  }
+  requestAnimationFrame(watchDeath);
+});
