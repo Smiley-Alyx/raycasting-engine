@@ -8,6 +8,7 @@ import {
   unlockAudio,
   playMusic,
   stopRayc,
+  setBackgroundColors,
   getAudioState,
   setMusicEnabled,
   setSfxEnabled,
@@ -105,6 +106,7 @@ async function startLevelById(levelId: string) {
   setLegend(level.legend);
   setMap(level.grid);
   setSpawn(level.spawn);
+  setBackgroundColors(level.colors);
 
   setAudioConfig({
     music: level.audio?.music ?? null,
@@ -122,6 +124,7 @@ type CustomLevelJson = {
   legend: Record<string, string>;
   rows: string[];
   spawn: { x: number; y: number; rot: number };
+  colors?: { ceiling?: string; floor?: string };
   audio?: { music?: Parameters<typeof setAudioConfig>[0]['music'] };
 };
 
@@ -157,6 +160,7 @@ async function maybeStartCustomFromEditor() {
   setLegend(level.legend as unknown as Record<number, string>);
   setMap(level.rows.map((row) => row.split('').map((c) => Number(c) || 0)));
   setSpawn(level.spawn);
+  setBackgroundColors(level.colors ?? {});
 
   setAudioConfig({
     music: level.audio?.music ?? null,

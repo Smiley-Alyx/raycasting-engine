@@ -77,6 +77,11 @@ let legend: Record<number, string> = {
   6: 'door',
 };
 
+let colors: { ceiling: string; floor: string } = {
+  ceiling: '#E3E3E1',
+  floor: '#858585',
+};
+
 function updatePalette() {
   if (!(tileSelect instanceof HTMLSelectElement)) return;
   const prev = tileSelect.value;
@@ -317,6 +322,7 @@ type LevelJson = {
   rows: string[];
   legend?: Record<string, string>;
   spawn?: { x: number; y: number; rot: number };
+  colors?: { ceiling?: string; floor?: string };
 };
 
 function isLevelJson(value: unknown): value is LevelJson {
@@ -339,6 +345,13 @@ function applyLevelJson(level: LevelJson) {
   if (level.spawn) {
     spawn = level.spawn;
     updateSpawnReadout();
+  }
+
+  if (level.colors && typeof level.colors === 'object') {
+    colors = {
+      ceiling: typeof level.colors.ceiling === 'string' ? level.colors.ceiling : colors.ceiling,
+      floor: typeof level.colors.floor === 'string' ? level.colors.floor : colors.floor,
+    };
   }
 
   setGridFromRows(level.rows);
@@ -377,6 +390,7 @@ function exportLevelJson() {
     id: 'custom',
     name: 'Custom',
     legend,
+    colors,
     audio: {
       music: null,
     },

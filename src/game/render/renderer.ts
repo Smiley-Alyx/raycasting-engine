@@ -13,14 +13,22 @@ export function createRenderer({
   getViewHeight: () => number;
   player: Player;
 }) {
+  let ceilingColor = '#E3E3E1';
+  let floorColor = '#858585';
+
+  function setBackgroundColors(colors: { ceiling?: string; floor?: string }) {
+    if (typeof colors.ceiling === 'string') ceilingColor = colors.ceiling;
+    if (typeof colors.floor === 'string') floorColor = colors.floor;
+  }
+
   function drawBackground() {
     const w = getViewWidth();
     const h = getViewHeight();
 
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#E3E3E1';
+    ctx.fillStyle = ceilingColor;
     ctx.fillRect(0, 0, w, h / 2);
-    ctx.fillStyle = '#858585';
+    ctx.fillStyle = floorColor;
     ctx.fillRect(0, h / 2, w, h / 2);
   }
 
@@ -63,5 +71,6 @@ export function createRenderer({
     drawBackground,
     drawRay,
     drawMap,
+    setBackgroundColors,
   };
 }

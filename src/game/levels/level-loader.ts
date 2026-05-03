@@ -13,11 +13,17 @@ type LevelAudioConfig = {
   };
 };
 
+type LevelColorsConfig = {
+  ceiling: string;
+  floor: string;
+};
+
 type LevelJson = {
   id?: string;
   name?: string;
   legend?: Legend;
   audio?: unknown;
+  colors?: unknown;
   rows: string[];
   spawn?: unknown;
 };
@@ -32,7 +38,6 @@ export async function loadLevel(levelUrl: string) {
   if (!res.ok) {
     throw new Error('Failed to load level: ' + levelUrl);
   }
-
   const data: LevelJson = await res.json();
 
   if (!data || !Array.isArray(data.rows) || data.rows.length === 0) {
@@ -104,6 +109,20 @@ export async function loadLevel(levelUrl: string) {
     if (cfg.music || cfg.sfx) audio = cfg;
   }
 
+  const defaultColors: LevelColorsConfig = {
+    ceiling: '#E3E3E1',
+    floor: '#858585',
+  };
+
+  let colors: LevelColorsConfig = defaultColors;
+  if (data.colors && typeof data.colors === 'object') {
+    const c = data.colors as { ceiling?: unknown; floor?: unknown };
+    colors = {
+      ceiling: typeof c.ceiling === 'string' ? c.ceiling : defaultColors.ceiling,
+      floor: typeof c.floor === 'string' ? c.floor : defaultColors.floor,
+    };
+  }
+
   return {
     id: data.id,
     name: data.name,
@@ -111,6 +130,7 @@ export async function loadLevel(levelUrl: string) {
     grid,
     spawn,
     audio,
+    colors,
   };
 }
 

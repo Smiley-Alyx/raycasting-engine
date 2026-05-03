@@ -8,9 +8,12 @@ import { DEFAULT_SFX } from './audio/sfx-config';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
+type RendererInstance = ReturnType<typeof createRenderer>;
+
 type PlayerInstance = Player;
 
 let engine: EngineInstance | null = null;
+let renderer: RendererInstance | null = null;
 
 const audio = new AudioManager();
 audio.setSfxSources(DEFAULT_SFX);
@@ -56,7 +59,7 @@ function ensureEngine() {
     throw new Error('Canvas context is not initialized. Did you import canvas-init first?');
   }
 
-  const renderer = createRenderer({ ctx, getViewWidth, getViewHeight, player });
+  renderer = createRenderer({ ctx, getViewWidth, getViewHeight, player });
   engine = createEngine({
     ctx,
     getViewWidth,
@@ -74,6 +77,11 @@ function ensureEngine() {
     },
   });
   return engine;
+}
+
+export function setBackgroundColors(colors: { ceiling?: string; floor?: string }) {
+  ensureEngine();
+  renderer?.setBackgroundColors(colors);
 }
 
 export function setMap(newMap: Grid) {
