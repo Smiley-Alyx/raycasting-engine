@@ -23,6 +23,7 @@ type Renderer = {
 type EngineEvents = {
   onDoorOpen?: (xMap: number, yMap: number) => void;
   onFootstep?: () => void;
+  onShoot?: () => void;
 };
 
 export function createEngine({
@@ -50,8 +51,10 @@ export function createEngine({
   const MS_PER_UPDATE = 1000 / 60;
 
   let prevUseDown = false;
+  let prevShootDown = false;
 
   let footstepCooldownMs = 0;
+  let shootCooldownMs = 0;
 
   function setSpawn(spawn: Spawn | null) {
     if (!spawn || typeof spawn !== 'object') return;
@@ -74,6 +77,13 @@ export function createEngine({
       tryOpenDoorInFront();
     }
     prevUseDown = useDown;
+
+    const shootDown = input.isDown('Space');
+    if (shootDown && !prevShootDown && shootCooldownMs <= 0) {
+      events?.onShoot?.();
+      shootCooldownMs = 220;
+    }
+    prevShootDown = shootDown;
 
     player.mov =
       input.isDown('KeyW') || input.isDown('ArrowUp')
@@ -111,6 +121,7 @@ export function createEngine({
     const actuallyMoved = !hitWallState(xNew, yNew) && (oldX !== player.x || oldY !== player.y);
 
     footstepCooldownMs = Math.max(0, footstepCooldownMs - dt * 1000);
+    shootCooldownMs = Math.max(0, shootCooldownMs - dt * 1000);
     if (moving && actuallyMoved && footstepCooldownMs <= 0) {
       events?.onFootstep?.();
       const walkIntervalMs = 360;

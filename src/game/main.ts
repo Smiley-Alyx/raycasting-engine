@@ -17,6 +17,7 @@ import {
 } from './rayc';
 import { loadLevel, loadLevelsIndex } from './levels/level-loader';
 import { DEFAULT_SFX } from './audio/sfx-config';
+import { getPlayer } from './rayc';
 
 const CUSTOM_LEVEL_STORAGE_KEY = 'rayc.customLevel';
 
@@ -66,6 +67,20 @@ function initAudioUi() {
   });
 
   syncUi();
+}
+
+function initHpUi() {
+  const hpEl = document.getElementById('hpText');
+  if (!(hpEl instanceof HTMLElement)) return;
+  const el = hpEl;
+
+  function update() {
+    const p = getPlayer();
+    el.textContent = `HP: ${Math.max(0, Math.floor(p.hp))}/${Math.max(0, Math.floor(p.maxHp))}`;
+    requestAnimationFrame(update);
+  }
+
+  update();
 }
 
 window.addEventListener(
@@ -212,6 +227,14 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
   showMenu();
   running = false;
 });
+
+window.addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.code !== 'KeyH' || e.repeat) return;
+  if (!running) return;
+  const p = getPlayer();
+  p.hp = Math.max(0, p.hp - 10);
+});
 initAudioUi();
+initHpUi();
 initMenu();
 void maybeStartCustomFromEditor();

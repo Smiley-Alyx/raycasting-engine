@@ -14,6 +14,8 @@ export interface Player {
   mov: number;
   dir: number;
   rot: number;
+  hp: number;
+  maxHp: number;
   speed: number;
   sprint: number;
   sprintFactor: number;

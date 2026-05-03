@@ -24,6 +24,8 @@ const player: PlayerInstance = {
   mov: 0,
   dir: 0,
   rot: -1.5,
+  hp: 100,
+  maxHp: 100,
   speed: 0.05,
   sprint: 0,
   sprintFactor: 2,
@@ -73,6 +75,10 @@ function ensureEngine() {
       },
       onFootstep: () => {
         audio.playSfx('footstep');
+      },
+      onShoot: () => {
+        audio.playSfx('shoot');
+        renderer?.triggerFlash();
       },
     },
   });

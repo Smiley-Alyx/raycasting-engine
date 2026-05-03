@@ -16,6 +16,8 @@ export function createRenderer({
   let ceilingColor = '#E3E3E1';
   let floorColor = '#858585';
 
+  let flash = 0;
+
   function setBackgroundColors(colors: { ceiling?: string; floor?: string }) {
     if (typeof colors.ceiling === 'string') ceilingColor = colors.ceiling;
     if (typeof colors.floor === 'string') floorColor = colors.floor;
@@ -58,7 +60,17 @@ export function createRenderer({
     vignette.addColorStop(1, 'rgba(0,0,0,0.35)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, w, h);
+
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(0.18, flash)})`;
+      ctx.fillRect(0, 0, w, h);
+      flash = Math.max(0, flash - 0.06);
+    }
     ctx.restore();
+  }
+
+  function triggerFlash() {
+    flash = 0.22;
   }
 
   function drawRay(dist: number, x: number, offset: number, img: string | number) {
@@ -101,5 +113,6 @@ export function createRenderer({
     drawRay,
     drawMap,
     setBackgroundColors,
+    triggerFlash,
   };
 }
