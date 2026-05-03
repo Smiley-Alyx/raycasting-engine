@@ -2,6 +2,10 @@
 
 Небольшой учебный движок в стиле «ранних 3D» (как Wolfenstein 3D), написанный на чистом JavaScript и Canvas 2D.
 
+Демо (GitHub Pages):
+
+https://smiley-alyx.github.io/raycasting-engine/
+
 Проект полезен как:
 
 - **Демо raycasting-рендера** на Canvas 2D.
@@ -106,13 +110,13 @@ npm run dev
 
 Минимальный путь:
 
-1. **Скопируй/создай** папку `src/game/` и делай изменения только там.
-2. **Уровни** положи в `levels/` и добавь индекс `levels/index.json`.
-3. **Текстуры** подключи в `index.html` как `<img id="..." src="...">`.
-4. В `src/game/render/materials.ts` определи соответствие:
+1. **Скопируйте/создайте** папку `src/game/` и делайте изменения только там.
+2. **Уровни** положите в `levels/` и добавьте индекс `levels/index.json`.
+3. **Текстуры** подключите в `index.html` как `<img id="..." src="...">`.
+4. В `src/game/render/materials.ts` определите соответствие:
    - `material -> textureId`
    - `textureId -> domId` (id картинки)
-5. В `src/game/main.ts` загрузи нужный уровень и вызови:
+5. В `src/game/main.ts` загрузите нужный уровень и вызовите:
    - `setLegend(level.legend)`
    - `setMap(level.grid)`
    - `setSpawn(level.spawn)`
