@@ -388,7 +388,8 @@ function initMenu() {
 
   if (editorBtn instanceof HTMLButtonElement) {
     editorBtn.addEventListener('click', () => {
-      window.location.href = new URL('editor.html', import.meta.env.BASE_URL).toString();
+      const base = new URL(import.meta.env.BASE_URL, window.location.origin);
+      window.location.href = new URL('editor.html', base).toString();
     });
   }
 }

@@ -35,10 +35,11 @@ type LevelsIndexJson = {
 
 function resolvePublicUrl(path: string): string {
   if (typeof path !== 'string') return path;
+  const base = new URL(import.meta.env.BASE_URL, window.location.origin);
   if (path.startsWith('/')) {
-    return new URL(path.slice(1), import.meta.env.BASE_URL).toString();
+    return new URL(path.slice(1), base).toString();
   }
-  return new URL(path, import.meta.env.BASE_URL).toString();
+  return new URL(path, base).toString();
 }
 
 export async function loadLevel(levelUrl: string) {
