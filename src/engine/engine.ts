@@ -1,6 +1,7 @@
 import {
   hitWall as hitWallState,
   isDoorCell,
+  getCellMaterial,
   setCell,
   setLegend as setLegendState,
   setMap as setMapState,
@@ -24,6 +25,9 @@ type EngineEvents = {
   onDoorOpen?: (xMap: number, yMap: number) => void;
   onFootstep?: () => void;
   onShoot?: () => void;
+  onEnemyKilled?: (xMap: number, yMap: number) => void;
+  onPlayerDamaged?: (amount: number) => void;
+  onPlayerDied?: () => void;
 };
 
 export function createEngine({
@@ -55,12 +59,35 @@ export function createEngine({
 
   let footstepCooldownMs = 0;
   let shootCooldownMs = 0;
+  let enemyDamageCooldownMs = 0;
 
   function setSpawn(spawn: Spawn | null) {
     if (!spawn || typeof spawn !== 'object') return;
     if (typeof spawn.x === 'number') player.x = spawn.x;
     if (typeof spawn.y === 'number') player.y = spawn.y;
     if (typeof spawn.rot === 'number') player.rot = spawn.rot;
+  }
+
+  function tryShoot() {
+    const maxDist = 8;
+    const step = 0.05;
+
+    for (let d = 0; d <= maxDist; d += step) {
+      const xProbe = player.x + d * Math.cos(player.rot);
+      const yProbe = player.y - d * Math.sin(player.rot);
+      const xMap = Math.floor(xProbe);
+      const yMap = Math.floor(yProbe);
+
+      if (!hitWallState(xProbe, yProbe)) continue;
+
+      const mat = getCellMaterial(xMap, yMap);
+      if (mat === 'enemy') {
+        setCell(xMap, yMap, 0);
+        events?.onEnemyKilled?.(xMap, yMap);
+      }
+
+      return;
+    }
   }
 
   function setMap(newMap: Grid) {
@@ -81,6 +108,7 @@ export function createEngine({
     const shootDown = input.isDown('Space');
     if (shootDown && !prevShootDown && shootCooldownMs <= 0) {
       events?.onShoot?.();
+      tryShoot();
       shootCooldownMs = 220;
     }
     prevShootDown = shootDown;
@@ -122,11 +150,66 @@ export function createEngine({
 
     footstepCooldownMs = Math.max(0, footstepCooldownMs - dt * 1000);
     shootCooldownMs = Math.max(0, shootCooldownMs - dt * 1000);
+    enemyDamageCooldownMs = Math.max(0, enemyDamageCooldownMs - dt * 1000);
     if (moving && actuallyMoved && footstepCooldownMs <= 0) {
       events?.onFootstep?.();
       const walkIntervalMs = 360;
       footstepCooldownMs = player.sprint ? walkIntervalMs / 4 : walkIntervalMs;
     }
+
+    // Simple enemy damage: if an enemy has line of sight to the player, apply periodic damage.
+    if (enemyDamageCooldownMs <= 0) {
+      const dmg = computeEnemyDamage();
+      if (dmg > 0) {
+        player.hp = Math.max(0, player.hp - dmg);
+        events?.onPlayerDamaged?.(dmg);
+        enemyDamageCooldownMs = 650;
+        if (player.hp <= 0) {
+          events?.onPlayerDied?.();
+        }
+      }
+    }
+  }
+
+  function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number): boolean {
+    const dx = xTo - xFrom;
+    const dy = yTo - yFrom;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 0.0001) return true;
+    const step = 0.08;
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    for (let d = 0.2; d < dist; d += step) {
+      const x = xFrom + nx * d;
+      const y = yFrom + ny * d;
+      if (!hitWallState(x, y)) continue;
+      const mat = getCellMaterial(Math.floor(x), Math.floor(y));
+      if (mat === 'enemy') continue;
+      return false;
+    }
+    return true;
+  }
+
+  function computeEnemyDamage(): number {
+    // Scan a small neighborhood around the player.
+    const r = 6;
+    const x0 = Math.floor(player.x);
+    const y0 = Math.floor(player.y);
+
+    for (let y = y0 - r; y <= y0 + r; y++) {
+      for (let x = x0 - r; x <= x0 + r; x++) {
+        const mat = getCellMaterial(x, y);
+        if (mat !== 'enemy') continue;
+        const ex = x + 0.5;
+        const ey = y + 0.5;
+        const dist = Math.hypot(player.x - ex, player.y - ey);
+        if (dist > 6) continue;
+        if (!hasLineOfSight(ex, ey, player.x, player.y)) continue;
+        return 5;
+      }
+    }
+    return 0;
   }
 
   function tryOpenDoorInFront() {

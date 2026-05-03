@@ -80,6 +80,16 @@ function ensureEngine() {
         audio.playSfx('shoot');
         renderer?.triggerFlash();
       },
+      onEnemyKilled: () => {
+        audio.playSfx('shoot');
+        renderer?.triggerKillFill();
+      },
+      onPlayerDamaged: () => {
+        renderer?.triggerDamagePulse();
+      },
+      onPlayerDied: () => {
+        renderer?.triggerKillFill();
+      },
     },
   });
   return engine;

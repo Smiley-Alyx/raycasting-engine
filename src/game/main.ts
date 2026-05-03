@@ -21,6 +21,87 @@ import { getPlayer } from './rayc';
 
 const CUSTOM_LEVEL_STORAGE_KEY = 'rayc.customLevel';
 
+function cloneGrid(grid: number[][]) {
+  return grid.map((row) => row.slice());
+}
+
+function computeInitialVisibleCells({
+  grid,
+  x,
+  y,
+  rot,
+  fov,
+}: {
+  grid: number[][];
+  x: number;
+  y: number;
+  rot: number;
+  fov: number;
+}) {
+  const visible = new Set<string>();
+  const rays = 64;
+  const maxDist = 14;
+  const step = 0.12;
+
+  for (let i = 0; i < rays; i++) {
+    const a = rot - fov / 2 + (i / (rays - 1)) * fov;
+    for (let d = 0; d < maxDist; d += step) {
+      const px = x + d * Math.cos(a);
+      const py = y - d * Math.sin(a);
+      const cx = Math.floor(px);
+      const cy = Math.floor(py);
+      if (cy < 0 || cy >= grid.length) break;
+      if (cx < 0 || cx >= grid[0].length) break;
+      visible.add(`${cx},${cy}`);
+      if (grid[cy][cx] !== 0) break;
+    }
+  }
+
+  return visible;
+}
+
+function placeRandomEnemies({
+  grid,
+  player,
+  enemyCellId,
+}: {
+  grid: number[][];
+  player: ReturnType<typeof getPlayer>;
+  enemyCellId: number;
+}) {
+  const g = cloneGrid(grid);
+  const visible = computeInitialVisibleCells({
+    grid: g,
+    x: player.x,
+    y: player.y,
+    rot: player.rot,
+    fov: player.fov,
+  });
+
+  const w = g[0]?.length ?? 0;
+  const h = g.length;
+  const approxCount = Math.floor((w * h) / 120);
+  const count = Math.max(4, Math.min(14, approxCount));
+
+  const minSpawnDist = 4;
+  let placed = 0;
+  let attempts = 0;
+
+  while (placed < count && attempts < 2000) {
+    attempts++;
+    const x = 1 + Math.floor(Math.random() * Math.max(1, w - 2));
+    const y = 1 + Math.floor(Math.random() * Math.max(1, h - 2));
+    if (g[y][x] !== 0) continue;
+    if (visible.has(`${x},${y}`)) continue;
+    const dist = Math.hypot(player.x - (x + 0.5), player.y - (y + 0.5));
+    if (dist < minSpawnDist) continue;
+    g[y][x] = enemyCellId;
+    placed++;
+  }
+
+  return g;
+}
+
 function initAudioUi() {
   const musicToggleBtn = document.getElementById('musicToggleBtn');
   const sfxToggleBtn = document.getElementById('sfxToggleBtn');
@@ -118,10 +199,20 @@ async function startLevelById(levelId: string) {
   }
 
   const level = await loadLevel(levelEntry.file);
-  setLegend(level.legend);
+  const legendWithEnemy = { ...level.legend, 9: 'enemy' };
+  setLegend(legendWithEnemy);
   setMap(level.grid);
   setSpawn(level.spawn);
   setBackgroundColors(level.colors);
+
+  const p = getPlayer();
+  setMap(
+    placeRandomEnemies({
+      grid: level.grid,
+      player: p,
+      enemyCellId: 9,
+    }),
+  );
 
   setAudioConfig({
     music: level.audio?.music ?? null,
@@ -172,10 +263,16 @@ async function maybeStartCustomFromEditor() {
 
   const level = parseCustomLevelJson(raw);
 
-  setLegend(level.legend as unknown as Record<number, string>);
-  setMap(level.rows.map((row) => row.split('').map((c) => Number(c) || 0)));
+  const baseLegend = level.legend as unknown as Record<string, string>;
+  const legendWithEnemy = { ...baseLegend, 9: 'enemy' };
+  setLegend(legendWithEnemy as unknown as Record<number, string>);
+  const grid = level.rows.map((row) => row.split('').map((c) => Number(c) || 0));
+  setMap(grid);
   setSpawn(level.spawn);
   setBackgroundColors(level.colors ?? {});
+
+  const p = getPlayer();
+  setMap(placeRandomEnemies({ grid, player: p, enemyCellId: 9 }));
 
   setAudioConfig({
     music: level.audio?.music ?? null,

@@ -8,6 +8,7 @@ const textureById: Map<number, string> = new Map([
   [7, 'stand4'],
   [8, 'GStand1'],
   [9, 'GStand2'],
+  [10, 'enemy'],
 ]);
 
 const materialToTextureId: Map<string, number> = new Map([
@@ -18,6 +19,7 @@ const materialToTextureId: Map<string, number> = new Map([
   ['stand1', 4],
   ['stand2', 5],
   ['stand3', 6],
+  ['enemy', 10],
   ['stand4', 7],
   ['gstand1', 8],
   ['gstand2', 9],

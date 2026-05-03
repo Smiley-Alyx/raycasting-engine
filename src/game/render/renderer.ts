@@ -17,6 +17,9 @@ export function createRenderer({
   let floorColor = '#858585';
 
   let flash = 0;
+  let damagePulse = 0;
+  let killFill = 0;
+  let killFillTarget = 0;
 
   function setBackgroundColors(colors: { ceiling?: string; floor?: string }) {
     if (typeof colors.ceiling === 'string') ceilingColor = colors.ceiling;
@@ -66,11 +69,39 @@ export function createRenderer({
       ctx.fillRect(0, 0, w, h);
       flash = Math.max(0, flash - 0.06);
     }
+
+    if (damagePulse > 0) {
+      ctx.fillStyle = `rgba(120,0,0,${Math.min(0.35, damagePulse)})`;
+      ctx.fillRect(0, 0, w, h);
+      damagePulse = Math.max(0, damagePulse - 0.03);
+    }
+
+    // Slow red fill after enemy kill.
+    if (killFillTarget > 0) {
+      killFillTarget = Math.max(0, killFillTarget - 0.004);
+    }
+    if (killFill < killFillTarget) {
+      killFill = Math.min(killFillTarget, killFill + 0.01);
+    } else if (killFill > killFillTarget) {
+      killFill = Math.max(killFillTarget, killFill - 0.006);
+    }
+    if (killFill > 0) {
+      ctx.fillStyle = `rgba(120,0,0,${Math.min(0.6, killFill)})`;
+      ctx.fillRect(0, 0, w, h);
+    }
     ctx.restore();
   }
 
   function triggerFlash() {
     flash = 0.22;
+  }
+
+  function triggerDamagePulse() {
+    damagePulse = Math.max(damagePulse, 0.28);
+  }
+
+  function triggerKillFill() {
+    killFillTarget = Math.min(0.55, killFillTarget + 0.35);
   }
 
   function drawRay(dist: number, x: number, offset: number, img: string | number) {
@@ -114,5 +145,7 @@ export function createRenderer({
     drawMap,
     setBackgroundColors,
     triggerFlash,
+    triggerDamagePulse,
+    triggerKillFill,
   };
 }
