@@ -176,13 +176,26 @@ async function maybeStartCustomFromEditor() {
 function initMenu() {
   showMenu();
 
-  const level1Btn = document.getElementById('menuLevel1Btn');
+  const levelsRoot = document.getElementById('menuLevels');
   const editorBtn = document.getElementById('menuEditorBtn');
 
-  if (level1Btn instanceof HTMLButtonElement) {
-    level1Btn.addEventListener('click', () => {
-      void startLevelById('level1');
-    });
+  if (levelsRoot instanceof HTMLElement) {
+    void (async () => {
+      const levelsIndex = await loadLevelsIndex('/levels/index.json');
+      levelsRoot.innerHTML = '';
+
+      const visibleLevels = levelsIndex.levels.filter((l) => !l.hidden);
+      for (const level of visibleLevels) {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.type = 'button';
+        btn.textContent = level.name ?? level.id;
+        btn.addEventListener('click', () => {
+          void startLevelById(level.id);
+        });
+        levelsRoot.appendChild(btn);
+      }
+    })();
   }
 
   if (editorBtn instanceof HTMLButtonElement) {

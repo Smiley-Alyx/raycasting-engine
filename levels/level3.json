@@ -1,24 +1,17 @@
 {
-  "id": "level1",
-  "name": "Level 1",
+  "id": "level3",
+  "name": "Level 3",
   "legend": {
     "0": "empty",
     "2": "brick",
     "3": "window",
     "6": "door"
   },
-  "audio": {
-    "music": {
-      "src": "/audio/music/level1/level1.wav",
-      "loop": true,
-      "volume": 0.5
-    }
-  },
   "colors": {
-    "ceiling": "#0b0c10",
-    "floor": "#17161a"
+    "ceiling": "#101018",
+    "floor": "#0a0a0f"
   },
-  "spawn": { "x": 2.5, "y": 2.5, "rot": 0 },
+  "spawn": { "x": 2.5, "y": 20.5, "rot": -1.0 },
   "rows": [
     "22222222222222222222222222222222",
     "20000000000000000000000000000002",

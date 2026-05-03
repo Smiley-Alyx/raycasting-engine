@@ -29,7 +29,7 @@ type LevelJson = {
 };
 
 type LevelsIndexJson = {
-  levels: Array<{ id: string; file: string }>;
+  levels: Array<{ id: string; file: string; name?: string; hidden?: boolean }>;
   default: string;
 };
 
