@@ -355,17 +355,31 @@ function initMenu() {
 
   if (levelsRoot instanceof HTMLElement) {
     void (async () => {
-      const levelsIndex = await loadLevelsIndex('/levels/index.json');
-      levelsRoot.innerHTML = '';
+      try {
+        const levelsIndex = await loadLevelsIndex('/levels/index.json');
+        levelsRoot.innerHTML = '';
 
-      const visibleLevels = levelsIndex.levels.filter((l) => !l.hidden);
-      for (const level of visibleLevels) {
+        const visibleLevels = levelsIndex.levels.filter((l) => !l.hidden);
+        for (const level of visibleLevels) {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          btn.type = 'button';
+          btn.textContent = level.name ?? level.id;
+          btn.addEventListener('click', () => {
+            void startLevelById(level.id);
+          });
+          levelsRoot.appendChild(btn);
+        }
+      } catch (err) {
+        console.error('Failed to load levels index', err);
+        levelsRoot.innerHTML = '';
+
         const btn = document.createElement('button');
         btn.className = 'btn';
         btn.type = 'button';
-        btn.textContent = level.name ?? level.id;
+        btn.textContent = 'Start';
         btn.addEventListener('click', () => {
-          void startLevelById(level.id);
+          void startLevelById('level1');
         });
         levelsRoot.appendChild(btn);
       }
