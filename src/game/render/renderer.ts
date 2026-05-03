@@ -30,6 +30,35 @@ export function createRenderer({
     ctx.fillRect(0, 0, w, h / 2);
     ctx.fillStyle = floorColor;
     ctx.fillRect(0, h / 2, w, h / 2);
+
+    // Subtle vertical shading to avoid a flat look.
+    ctx.save();
+    const topShade = ctx.createLinearGradient(0, 0, 0, h / 2);
+    topShade.addColorStop(0, 'rgba(0,0,0,0.22)');
+    topShade.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = topShade;
+    ctx.fillRect(0, 0, w, h / 2);
+
+    const bottomShade = ctx.createLinearGradient(0, h / 2, 0, h);
+    bottomShade.addColorStop(0, 'rgba(0,0,0,0)');
+    bottomShade.addColorStop(1, 'rgba(0,0,0,0.28)');
+    ctx.fillStyle = bottomShade;
+    ctx.fillRect(0, h / 2, w, h / 2);
+
+    // Light vignette.
+    const vignette = ctx.createRadialGradient(
+      w / 2,
+      h / 2,
+      Math.min(w, h) * 0.25,
+      w / 2,
+      h / 2,
+      Math.max(w, h) * 0.75,
+    );
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
   }
 
   function drawRay(dist: number, x: number, offset: number, img: string | number) {
