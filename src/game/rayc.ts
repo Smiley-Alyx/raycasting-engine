@@ -96,19 +96,23 @@ function updateEnemies(dt: number) {
       const nx = dx / len;
       const ny = dy / len;
 
-      const xTry = e.x + nx * step;
-      const yTry = e.y + ny * step;
-
       const r = 0.22;
 
-      // Simple collision: try full move, then axis moves.
-      if (!hitWallCircle(xTry, yTry, r)) {
-        e.x = xTry;
-        e.y = yTry;
-      } else if (!hitWallCircle(xTry, e.y, r)) {
-        e.x = xTry;
-      } else if (!hitWallCircle(e.x, yTry, r)) {
-        e.y = yTry;
+      // Doom-like behavior: once in melee range, stop and attack instead of orbiting.
+      const meleeRange = 1.25;
+      if (dist > meleeRange) {
+        const xTry = e.x + nx * step;
+        const yTry = e.y + ny * step;
+
+        // Simple collision: try full move, then axis moves.
+        if (!hitWallCircle(xTry, yTry, r)) {
+          e.x = xTry;
+          e.y = yTry;
+        } else if (!hitWallCircle(xTry, e.y, r)) {
+          e.x = xTry;
+        } else if (!hitWallCircle(e.x, yTry, r)) {
+          e.y = yTry;
+        }
       }
 
       // Damage when close and with LoS.
