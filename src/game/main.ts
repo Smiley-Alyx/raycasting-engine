@@ -33,6 +33,14 @@ function getDefaultMusicForLevelId(levelId: string) {
   };
 }
 
+function applyMenuAudio() {
+  setAudioConfig({
+    music: getDefaultMusicForLevelId('menu'),
+    sfx: DEFAULT_SFX,
+  });
+  playMusic();
+}
+
 function cloneGrid(grid: number[][]) {
   return grid.map((row) => row.slice());
 }
@@ -207,6 +215,7 @@ function showMenu() {
   const el = document.getElementById('menuRoot');
   if (!(el instanceof HTMLElement)) return;
   el.style.display = '';
+  applyMenuAudio();
 }
 
 let running = false;
@@ -247,6 +256,8 @@ function enterDeathState() {
 
   stopRayc();
   running = false;
+
+  applyMenuAudio();
 
   showBloodOverlay();
 
