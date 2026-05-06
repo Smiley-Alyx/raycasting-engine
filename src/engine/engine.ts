@@ -122,13 +122,25 @@ export function createEngine({
     const xNew = player.x + step * Math.cos(player.rot);
     const yNew = player.y - step * Math.sin(player.rot);
 
+    // Sliding movement: try full move, then allow axis moves if diagonal is blocked.
+    let moved = false;
     if (!solidAt(xNew, yNew)) {
       player.x = xNew;
       player.y = yNew;
+      moved = true;
+    } else {
+      if (!solidAt(xNew, player.y)) {
+        player.x = xNew;
+        moved = true;
+      }
+      if (!solidAt(player.x, yNew)) {
+        player.y = yNew;
+        moved = true;
+      }
     }
 
     const moving = player.mov !== 0;
-    const actuallyMoved = !solidAt(xNew, yNew) && (oldX !== player.x || oldY !== player.y);
+    const actuallyMoved = moved && (oldX !== player.x || oldY !== player.y);
 
     footstepCooldownMs = Math.max(0, footstepCooldownMs - dt * 1000);
     shootCooldownMs = Math.max(0, shootCooldownMs - dt * 1000);

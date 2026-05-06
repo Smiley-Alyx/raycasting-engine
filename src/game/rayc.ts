@@ -349,8 +349,8 @@ function ensureEngine() {
     input,
     renderer,
     hitSolid: (x: number, y: number) => {
-      const playerRadius = 0.26;
-      return hitWallCircle(x, y, playerRadius) || hitEnemyCircle(x, y, playerRadius + 0.26);
+      const playerRadius = 0.22;
+      return hitWallCircle(x, y, playerRadius) || hitEnemyCircle(x, y, playerRadius + 0.22);
     },
     events: {
       onDoorOpen: (xMap: number, yMap: number) => {
