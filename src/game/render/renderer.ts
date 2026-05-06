@@ -23,6 +23,19 @@ export function createRenderer({
   let killFill = 0;
   let killFillTarget = 0;
 
+  function getSourceSize(src: CanvasImageSource): { w: number; h: number } {
+    if (src instanceof HTMLImageElement) {
+      return {
+        w: src.naturalWidth || src.width || 1,
+        h: src.naturalHeight || src.height || 1,
+      };
+    }
+    if (src instanceof HTMLCanvasElement) {
+      return { w: src.width || 1, h: src.height || 1 };
+    }
+    return { w: 1, h: 1 };
+  }
+
   function setBackgroundColors(colors: { ceiling?: string; floor?: string }) {
     if (typeof colors.ceiling === 'string') ceilingColor = colors.ceiling;
     if (typeof colors.floor === 'string') floorColor = colors.floor;
@@ -115,11 +128,13 @@ export function createRenderer({
     const texture = getTextureForMaterial(img);
     if (!texture) return;
 
-    let texX = Math.floor(offset * 512);
-    if (texX < 0) texX = 0;
-    if (texX > 511) texX = 511;
+    const { w: texW, h: texH } = getSourceSize(texture);
 
-    ctx.drawImage(texture, texX, 0, 1, 512, x, viewHeight / 2 - sliceHeight / 2, 1, sliceHeight);
+    let texX = Math.floor(offset * texW);
+    if (texX < 0) texX = 0;
+    if (texX > texW - 1) texX = texW - 1;
+
+    ctx.drawImage(texture, texX, 0, 1, texH, x, viewHeight / 2 - sliceHeight / 2, 1, sliceHeight);
   }
 
   function drawSprites(zBuffer: Float64Array) {
@@ -160,8 +175,7 @@ export function createRenderer({
       const x1 = Math.floor(screenX + spriteWidth / 2);
       const y0 = Math.floor(h / 2 - spriteHeight / 2);
 
-      const texW = texture.width || 1;
-      const texH = texture.height || 1;
+      const { w: texW, h: texH } = getSourceSize(texture);
 
       for (let x = x0; x <= x1; x++) {
         if (x < 0 || x >= w) continue;
