@@ -39,6 +39,7 @@ export function createEngine({
   player,
   input,
   renderer,
+  hitSolid,
   events,
 }: {
   ctx: CanvasRenderingContext2D;
@@ -47,10 +48,13 @@ export function createEngine({
   player: Player;
   input: Input;
   renderer: Renderer;
+  hitSolid?: (x: number, y: number) => boolean;
   events?: EngineEvents;
 }) {
   let started = false;
   let rafId: number | null = null;
+
+  const solidAt = typeof hitSolid === 'function' ? hitSolid : hitWallState;
 
   let previousTime = Date.now();
   let lag = 0.0;
@@ -118,13 +122,13 @@ export function createEngine({
     const xNew = player.x + step * Math.cos(player.rot);
     const yNew = player.y - step * Math.sin(player.rot);
 
-    if (!hitWallState(xNew, yNew)) {
+    if (!solidAt(xNew, yNew)) {
       player.x = xNew;
       player.y = yNew;
     }
 
     const moving = player.mov !== 0;
-    const actuallyMoved = !hitWallState(xNew, yNew) && (oldX !== player.x || oldY !== player.y);
+    const actuallyMoved = !solidAt(xNew, yNew) && (oldX !== player.x || oldY !== player.y);
 
     footstepCooldownMs = Math.max(0, footstepCooldownMs - dt * 1000);
     shootCooldownMs = Math.max(0, shootCooldownMs - dt * 1000);

@@ -31,7 +31,28 @@ export function setEnemies(next: Array<{ x: number; y: number }>) {
 }
 
 function hitWallCircle(x: number, y: number, r: number): boolean {
-  return hitWall(x - r, y - r) || hitWall(x + r, y - r) || hitWall(x - r, y + r) || hitWall(x + r, y + r);
+  // 8 samples around the circle + center. Prevents corner clipping better than 4 samples.
+  if (hitWall(x, y)) return true;
+  const s = r * 0.95;
+  return (
+    hitWall(x - s, y) ||
+    hitWall(x + s, y) ||
+    hitWall(x, y - s) ||
+    hitWall(x, y + s) ||
+    hitWall(x - s, y - s) ||
+    hitWall(x + s, y - s) ||
+    hitWall(x - s, y + s) ||
+    hitWall(x + s, y + s)
+  );
+}
+
+function hitEnemyCircle(x: number, y: number, r: number): boolean {
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const d = Math.hypot(x - e.x, y - e.y);
+    if (d < r) return true;
+  }
+  return false;
 }
 
 export function getEnemies() {
@@ -96,21 +117,24 @@ function updateEnemies(dt: number) {
       const nx = dx / len;
       const ny = dy / len;
 
-      const r = 0.22;
+      const r = 0.24;
 
-      // Doom-like behavior: once in melee range, stop and attack instead of orbiting.
-      const meleeRange = 1.25;
-      if (dist > meleeRange) {
+      // Doom-like behavior: once close enough to the player, stop and attack.
+      // Also keep a small separation so enemy never overlaps the player.
+      const stopRange = 1.05;
+      if (dist > stopRange) {
         const xTry = e.x + nx * step;
         const yTry = e.y + ny * step;
 
+        const avoidPlayer = (x: number, y: number) => Math.hypot(x - player.x, y - player.y) < r + 0.28;
+
         // Simple collision: try full move, then axis moves.
-        if (!hitWallCircle(xTry, yTry, r)) {
+        if (!avoidPlayer(xTry, yTry) && !hitWallCircle(xTry, yTry, r)) {
           e.x = xTry;
           e.y = yTry;
-        } else if (!hitWallCircle(xTry, e.y, r)) {
+        } else if (!avoidPlayer(xTry, e.y) && !hitWallCircle(xTry, e.y, r)) {
           e.x = xTry;
-        } else if (!hitWallCircle(e.x, yTry, r)) {
+        } else if (!avoidPlayer(e.x, yTry) && !hitWallCircle(e.x, yTry, r)) {
           e.y = yTry;
         }
       }
@@ -227,6 +251,10 @@ function ensureEngine() {
     player,
     input,
     renderer,
+    hitSolid: (x: number, y: number) => {
+      const playerRadius = 0.26;
+      return hitWallCircle(x, y, playerRadius) || hitEnemyCircle(x, y, playerRadius + 0.26);
+    },
     events: {
       onDoorOpen: () => {
         audio.playSfx('doorOpen');
