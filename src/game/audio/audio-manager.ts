@@ -20,6 +20,8 @@ export class AudioManager {
 
   private sfxSrcByKey: Partial<Record<SfxKey, string>> = {};
 
+  private loopingSfxElByKey: Partial<Record<SfxKey, HTMLAudioElement>> = {};
+
   unlock() {
     if (this.unlocked) return;
     this.unlocked = true;
@@ -62,6 +64,9 @@ export class AudioManager {
 
   setSfxEnabled(enabled: boolean) {
     this.sfxEnabled = enabled;
+    if (!enabled) {
+      this.stopAllLoopingSfx();
+    }
   }
 
   getMusicVolume() {
@@ -142,5 +147,49 @@ export class AudioManager {
     void el.play().catch(() => {
       // ignore
     });
+  }
+
+  playLoopingSfx(key: SfxKey, volume = 0.7) {
+    if (!this.unlocked) return;
+    if (!this.sfxEnabled) return;
+
+    const src = this.sfxSrcByKey[key];
+    if (!src) return;
+
+    const existing = this.loopingSfxElByKey[key];
+    if (existing && existing.src === src && !existing.paused) {
+      existing.volume = Math.max(0, Math.min(1, volume * this.sfxVolume));
+      return;
+    }
+
+    if (existing) {
+      existing.pause();
+      existing.currentTime = 0;
+    }
+
+    const el = new Audio(src);
+    el.loop = true;
+    el.volume = Math.max(0, Math.min(1, volume * this.sfxVolume));
+    this.loopingSfxElByKey[key] = el;
+    void el.play().catch(() => {
+      // ignore
+    });
+  }
+
+  stopLoopingSfx(key: SfxKey) {
+    const el = this.loopingSfxElByKey[key];
+    if (!el) return;
+    el.pause();
+    el.currentTime = 0;
+    delete this.loopingSfxElByKey[key];
+  }
+
+  private stopAllLoopingSfx() {
+    for (const el of Object.values(this.loopingSfxElByKey)) {
+      if (!el) continue;
+      el.pause();
+      el.currentTime = 0;
+    }
+    this.loopingSfxElByKey = {};
   }
 }

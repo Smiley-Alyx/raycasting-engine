@@ -30,6 +30,10 @@ export function setEnemies(next: Array<{ x: number; y: number }>) {
   enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false, attackFlashMs: 0 }));
 }
 
+function hitWallCircle(x: number, y: number, r: number): boolean {
+  return hitWall(x - r, y - r) || hitWall(x + r, y - r) || hitWall(x - r, y + r) || hitWall(x + r, y + r);
+}
+
 export function getEnemies() {
   return enemies;
 }
@@ -51,16 +55,31 @@ function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number):
 }
 
 let enemyDamageCooldownMs = 0;
-let enemyLookSfxCooldownMs = 0;
+let enemyInSight = false;
 
 function updateEnemies(dt: number) {
   enemyDamageCooldownMs = Math.max(0, enemyDamageCooldownMs - dt * 1000);
-  enemyLookSfxCooldownMs = Math.max(0, enemyLookSfxCooldownMs - dt * 1000);
+
+  let inSightNow = false;
 
   for (const e of enemies) {
     if (!e.alive) continue;
     e.attackFlashMs = Math.max(0, e.attackFlashMs - dt * 1000);
     const dist = Math.hypot(player.x - e.x, player.y - e.y);
+
+    // Check if enemy is in your view (used for looping SFX).
+    if (!inSightNow) {
+      const maxDist = 9;
+      const halfAngle = (10 * Math.PI) / 180;
+      if (dist <= maxDist) {
+        const angle = Math.atan2(player.y - e.y, e.x - player.x);
+        let rel = angle - player.rot;
+        rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+        if (Math.abs(rel) <= halfAngle && hasLineOfSight(player.x, player.y, e.x, e.y)) {
+          inSightNow = true;
+        }
+      }
+    }
 
     if (!e.alerted) {
       if (dist < 8 && hasLineOfSight(e.x, e.y, player.x, player.y)) {
@@ -80,13 +99,15 @@ function updateEnemies(dt: number) {
       const xTry = e.x + nx * step;
       const yTry = e.y + ny * step;
 
+      const r = 0.22;
+
       // Simple collision: try full move, then axis moves.
-      if (!hitWall(xTry, yTry)) {
+      if (!hitWallCircle(xTry, yTry, r)) {
         e.x = xTry;
         e.y = yTry;
-      } else if (!hitWall(xTry, e.y)) {
+      } else if (!hitWallCircle(xTry, e.y, r)) {
         e.x = xTry;
-      } else if (!hitWall(e.x, yTry)) {
+      } else if (!hitWallCircle(e.x, yTry, r)) {
         e.y = yTry;
       }
 
@@ -105,34 +126,13 @@ function updateEnemies(dt: number) {
     }
   }
 
-  // Enemy presence sound when you look at an enemy.
-  if (enemyLookSfxCooldownMs <= 0) {
-    const maxDist = 9;
-    const halfAngle = (8 * Math.PI) / 180;
-
-    let seen = false;
-    for (const e of enemies) {
-      if (!e.alive) continue;
-      const dx = e.x - player.x;
-      const dy = e.y - player.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist > maxDist) continue;
-
-      const angle = Math.atan2(player.y - e.y, e.x - player.x);
-      let rel = angle - player.rot;
-      rel = Math.atan2(Math.sin(rel), Math.cos(rel));
-      if (Math.abs(rel) > halfAngle) continue;
-      if (!hasLineOfSight(player.x, player.y, e.x, e.y)) continue;
-
-      seen = true;
-      break;
-    }
-
-    if (seen) {
-      audio.playSfx('enemy', 0.55);
-      enemyLookSfxCooldownMs = 900;
-    }
+  // Loop enemy sound while at least one enemy is in sight.
+  if (inSightNow && !enemyInSight) {
+    audio.playLoopingSfx('enemy', 0.35);
+  } else if (!inSightNow && enemyInSight) {
+    audio.stopLoopingSfx('enemy');
   }
+  enemyInSight = inSightNow;
 }
 
 function tryShootEnemies() {
