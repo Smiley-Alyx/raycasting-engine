@@ -4,6 +4,76 @@ import { getCellMaterial, getMap, hitWall } from '../state/map-state';
 type AddRotToAngle = (rot: number, angle: number) => number;
 type DrawRay = (dist: number, x: number, offset: number, img: string | number) => void;
 
+type WallFace = 'N' | 'S' | 'E' | 'W';
+
+type AtlasKind = 'wall' | 'door' | 'stand';
+
+function getAtlasKind(m: string | number): AtlasKind | null {
+  if (m === 'wall' || m === 'brick' || m === 1) return 'wall';
+  if (m === 'door' || m === 6 || m === 3) return 'door';
+  if (m === 'stand' || m === 4) return 'stand';
+  return null;
+}
+
+function encodeAtlasTextureId(kind: AtlasKind, tile: number): number {
+  const t = ((tile % 16) + 16) % 16;
+  if (kind === 'wall') return 100 + t;
+  if (kind === 'door') return 200 + t;
+  return 300 + t;
+}
+
+function getAtlasVariantTextureId({
+  map,
+  xMap,
+  yMap,
+  face,
+  isVerticalHit,
+  kind,
+}: {
+  map: number[][];
+  xMap: number;
+  yMap: number;
+  face: WallFace;
+  isVerticalHit: boolean;
+  kind: AtlasKind;
+}): number {
+  // Determine "corridor" as a continuous segment of same-kind cells along the axis
+  // perpendicular to the hit normal. Within a segment, texture is constant.
+  // Neighboring parallel segments alternate using x/y parity to reduce repeats.
+
+  const w = map[0]?.length ?? 0;
+  const h = map.length;
+
+  const isSameKind = (x: number, y: number) => {
+    if (x < 0 || x >= w || y < 0 || y >= h) return false;
+    const m = getCellMaterial(x, y);
+    return getAtlasKind(m) === kind;
+  };
+
+  let segStart = 0;
+  if (isVerticalHit) {
+    // Vertical hit => wall face is E/W, segment extends along Y.
+    segStart = yMap;
+    while (segStart > 0 && isSameKind(xMap, segStart - 1)) segStart--;
+
+    const parity = Math.abs(xMap) % 2;
+    const salt = kind === 'door' ? 101 : kind === 'stand' ? 203 : 307;
+    const base = Math.abs(segStart * 7 + (face === 'W' ? 13 : 29) + salt) % 16;
+    const tile = parity === 0 ? base : (base + 1) % 16;
+    return encodeAtlasTextureId(kind, tile);
+  }
+
+  // Horizontal hit => wall face is N/S, segment extends along X.
+  segStart = xMap;
+  while (segStart > 0 && isSameKind(segStart - 1, yMap)) segStart--;
+
+  const parity = Math.abs(yMap) % 2;
+  const salt = kind === 'door' ? 101 : kind === 'stand' ? 203 : 307;
+  const base = Math.abs(segStart * 7 + (face === 'S' ? 17 : 31) + salt) % 16;
+  const tile = parity === 0 ? base : (base + 1) % 16;
+  return encodeAtlasTextureId(kind, tile);
+}
+
 export function castRays({
   player,
   getViewWidth,
@@ -58,6 +128,11 @@ function castSingleRay({
   let img: string | number = 0;
   let offset = 0;
 
+  let hitXMapH = 0;
+  let hitYMapH = 0;
+  let hitXMapV = 0;
+  let hitYMapV = 0;
+
   // По горизонтали
   let slope = 1 / (Math.sin(-angle) / Math.cos(-angle));
   y = facingUp ? Math.floor(player.y) : Math.ceil(player.y);
@@ -82,6 +157,8 @@ function castSingleRay({
       yHitH = y;
       offsetH = x % 1;
       imgH = getCellMaterial(xMap, yMap);
+      hitXMapH = xMap;
+      hitYMapH = yMap;
       break;
     }
 
@@ -112,6 +189,8 @@ function castSingleRay({
       yHitV = y;
       offsetV = y % 1;
       imgV = getCellMaterial(xMap, yMap);
+      hitXMapV = xMap;
+      hitYMapV = yMap;
       break;
     }
 
@@ -125,12 +204,24 @@ function castSingleRay({
     dist = distV;
     img = imgV;
     offset = offsetV;
+
+    const kind = getAtlasKind(img);
+    if (kind) {
+      const face: WallFace = facingRight ? 'W' : 'E';
+      img = getAtlasVariantTextureId({ map, xMap: hitXMapV, yMap: hitYMapV, face, isVerticalHit: true, kind });
+    }
   } else {
     x = xHitH;
     y = yHitH;
     dist = distH;
     img = imgH;
     offset = offsetH;
+
+    const kind = getAtlasKind(img);
+    if (kind) {
+      const face: WallFace = facingUp ? 'S' : 'N';
+      img = getAtlasVariantTextureId({ map, xMap: hitXMapH, yMap: hitYMapH, face, isVerticalHit: false, kind });
+    }
   }
 
   dist = dist * Math.cos(player.rot - angle);
