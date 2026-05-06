@@ -55,6 +55,56 @@ function hitEnemyCircle(x: number, y: number, r: number): boolean {
   return false;
 }
 
+function hitEnemyCircleExcept(x: number, y: number, r: number, except: Enemy): boolean {
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (e === except) continue;
+    const d = Math.hypot(x - e.x, y - e.y);
+    if (d < r) return true;
+  }
+  return false;
+}
+
+function resolvePlayerEnemySeparation(dt: number) {
+  const playerR = 0.26;
+  const enemyR = 0.24;
+  const minDist = playerR + enemyR + 0.02;
+  const maxPush = 0.18 * dt;
+
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist <= 0.0001 || dist >= minDist) continue;
+
+    const overlap = Math.min(maxPush, minDist - dist);
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    const candidates: Array<{ x: number; y: number }> = [];
+    // Push directly away from player.
+    candidates.push({ x: e.x + nx * overlap, y: e.y + ny * overlap });
+    // If blocked, try slight side-steps to reduce "hard blocking" in corridors.
+    const px = -ny;
+    const py = nx;
+    const side = overlap * 0.85;
+    candidates.push({ x: e.x + nx * overlap + px * side, y: e.y + ny * overlap + py * side });
+    candidates.push({ x: e.x + nx * overlap - px * side, y: e.y + ny * overlap - py * side });
+    // Fallback: small direct side steps.
+    candidates.push({ x: e.x + px * side, y: e.y + py * side });
+    candidates.push({ x: e.x - px * side, y: e.y - py * side });
+
+    for (const c of candidates) {
+      if (hitWallCircle(c.x, c.y, enemyR)) continue;
+      if (hitEnemyCircleExcept(c.x, c.y, enemyR * 2, e)) continue;
+      e.x = c.x;
+      e.y = c.y;
+      break;
+    }
+  }
+}
+
 export function getEnemies() {
   return enemies;
 }
@@ -269,6 +319,7 @@ function ensureEngine() {
       },
       onTick: (dt: number) => {
         updateEnemies(dt);
+        resolvePlayerEnemySeparation(dt);
       },
     },
   });

@@ -181,9 +181,9 @@ export function createEngine({
 
     const dt = elapsedTime / 1000;
 
-    events?.onTick?.(dt);
-
     processInput(dt);
+
+    events?.onTick?.(dt);
 
     while (lag >= MS_PER_UPDATE) {
       update();
