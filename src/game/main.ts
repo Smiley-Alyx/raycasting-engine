@@ -100,6 +100,8 @@ function placeRandomEnemies({
   player: ReturnType<typeof getPlayer>;
   enemyCellId: number;
 }) {
+  void enemyCellId;
+
   const visible = computeInitialVisibleCells({
     grid,
     x: player.x,
@@ -110,6 +112,32 @@ function placeRandomEnemies({
 
   const w = grid[0]?.length ?? 0;
   const h = grid.length;
+
+  const reachable = new Set<string>();
+  const q: Array<{ x: number; y: number }> = [];
+  const sx = Math.floor(player.x);
+  const sy = Math.floor(player.y);
+  if (sx >= 0 && sx < w && sy >= 0 && sy < h && grid[sy][sx] === 0) {
+    q.push({ x: sx, y: sy });
+    reachable.add(`${sx},${sy}`);
+  }
+  while (q.length) {
+    const { x, y } = q.shift()!;
+    const n = [
+      { x: x + 1, y },
+      { x: x - 1, y },
+      { x, y: y + 1 },
+      { x, y: y - 1 },
+    ];
+    for (const p of n) {
+      if (p.x < 0 || p.x >= w || p.y < 0 || p.y >= h) continue;
+      if (grid[p.y][p.x] !== 0) continue;
+      const key = `${p.x},${p.y}`;
+      if (reachable.has(key)) continue;
+      reachable.add(key);
+      q.push(p);
+    }
+  }
   const approxCount = Math.floor((w * h) / 120);
   const count = Math.max(4, Math.min(14, approxCount));
 
@@ -124,6 +152,7 @@ function placeRandomEnemies({
     const x = 1 + Math.floor(Math.random() * Math.max(1, w - 2));
     const y = 1 + Math.floor(Math.random() * Math.max(1, h - 2));
     if (grid[y][x] !== 0) continue;
+    if (!reachable.has(`${x},${y}`)) continue;
     if (visible.has(`${x},${y}`)) continue;
     const dist = Math.hypot(player.x - (x + 0.5), player.y - (y + 0.5));
     if (dist < minSpawnDist) continue;

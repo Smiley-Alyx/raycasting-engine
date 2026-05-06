@@ -211,6 +211,15 @@ export function createRenderer({
     ctx.fillStyle = 'rgb(255, 0, 0)';
     ctx.fillRect(player.x * 5 - 1, player.y * 5 - 1, 2, 2);
 
+    const enemies = typeof getEnemies === 'function' ? getEnemies() : [];
+    if (enemies.length) {
+      ctx.fillStyle = 'rgb(0, 0, 255)';
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        ctx.fillRect(e.x * 5 - 1, e.y * 5 - 1, 2, 2);
+      }
+    }
+
     for (let y = 0; y < map.length; y++) {
       for (let x = 0; x < map[y].length; x++) {
         if (map[y][x] > 0) {
