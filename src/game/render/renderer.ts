@@ -159,16 +159,17 @@ export function createRenderer({
         const angle = Math.atan2(player.y - e.y, e.x - player.x);
         let rel = angle - player.rot;
         rel = Math.atan2(Math.sin(rel), Math.cos(rel));
-        return { e, dist, rel };
+        const distPerp = dist * Math.cos(rel);
+        return { e, dist, distPerp, rel };
       })
       // back-to-front
       .sort((a, b) => b.dist - a.dist);
 
     for (const item of list) {
-      if (item.dist <= 0.001) continue;
+      if (item.distPerp <= 0.001) continue;
       if (Math.abs(item.rel) > player.fov / 2 + 0.2) continue;
 
-      const spriteHeight = (1 / item.dist) * distanceProjectionPlane;
+      const spriteHeight = (1 / item.distPerp) * distanceProjectionPlane;
       const spriteWidth = spriteHeight;
       const screenX = (0.5 + item.rel / player.fov) * w;
       const x0 = Math.floor(screenX - spriteWidth / 2);
@@ -180,7 +181,7 @@ export function createRenderer({
       for (let x = x0; x <= x1; x++) {
         if (x < 0 || x >= w) continue;
         const z = zBuffer[x];
-        if (z !== 0 && item.dist > z) continue;
+        if (z !== 0 && item.distPerp > z) continue;
 
         const u = (x - x0) / Math.max(1, x1 - x0);
         const sx = Math.floor(u * texW);
