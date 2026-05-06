@@ -138,16 +138,16 @@ function placeRandomEnemies({
       q.push(p);
     }
   }
-  const approxCount = Math.floor((w * h) / 70);
-  const count = Math.max(7, Math.min(22, approxCount));
+  const approxCount = Math.floor((w * h) / 45);
+  const count = Math.max(12, Math.min(34, approxCount));
 
-  const minSpawnDist = 3.25;
+  const minSpawnDist = 2.75;
   let placed = 0;
   let attempts = 0;
 
   const result: Array<{ x: number; y: number }> = [];
 
-  while (placed < count && attempts < 2000) {
+  while (placed < count && attempts < 5000) {
     attempts++;
     const x = 1 + Math.floor(Math.random() * Math.max(1, w - 2));
     const y = 1 + Math.floor(Math.random() * Math.max(1, h - 2));
