@@ -16,8 +16,8 @@
     }
   },
   "colors": {
-    "ceiling": "#c7b27a",
-    "floor": "#6e5a3c"
+    "ceiling": "#0c0c12",
+    "floor": "#1a1a1c"
   },
   "spawn": {
     "x": 2.5,
