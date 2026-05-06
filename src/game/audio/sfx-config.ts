@@ -11,4 +11,5 @@ export const DEFAULT_SFX: Partial<Record<SfxKey, string>> = {
   footstep: url('/audio/sfx/step.wav'),
   shoot: url('/audio/sfx/shoot.wav'),
   damage: url('/audio/sfx/damage.wav'),
+  enemy: url('/audio/sfx/enemy.wav'),
 } as const;

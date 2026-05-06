@@ -4,7 +4,7 @@ export type MusicConfig = {
   volume?: number;
 };
 
-export type SfxKey = 'doorOpen' | 'footstep' | 'shoot' | 'damage';
+export type SfxKey = 'doorOpen' | 'footstep' | 'shoot' | 'damage' | 'enemy';
 
 export class AudioManager {
   private unlocked = false;

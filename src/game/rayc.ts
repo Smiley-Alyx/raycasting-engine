@@ -21,12 +21,13 @@ type Enemy = {
   y: number;
   alive: boolean;
   alerted: boolean;
+  attackFlashMs: number;
 };
 
 let enemies: Enemy[] = [];
 
 export function setEnemies(next: Array<{ x: number; y: number }>) {
-  enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false }));
+  enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false, attackFlashMs: 0 }));
 }
 
 export function getEnemies() {
@@ -50,12 +51,15 @@ function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number):
 }
 
 let enemyDamageCooldownMs = 0;
+let enemyLookSfxCooldownMs = 0;
 
 function updateEnemies(dt: number) {
   enemyDamageCooldownMs = Math.max(0, enemyDamageCooldownMs - dt * 1000);
+  enemyLookSfxCooldownMs = Math.max(0, enemyLookSfxCooldownMs - dt * 1000);
 
   for (const e of enemies) {
     if (!e.alive) continue;
+    e.attackFlashMs = Math.max(0, e.attackFlashMs - dt * 1000);
     const dist = Math.hypot(player.x - e.x, player.y - e.y);
 
     if (!e.alerted) {
@@ -91,12 +95,42 @@ function updateEnemies(dt: number) {
         const dmg = 5;
         player.hp = Math.max(0, player.hp - dmg);
         audio.playSfx('damage');
+        e.attackFlashMs = 220;
         renderer?.triggerDamagePulse();
         enemyDamageCooldownMs = 650;
         if (player.hp <= 0) {
           renderer?.triggerKillFill();
         }
       }
+    }
+  }
+
+  // Enemy presence sound when you look at an enemy.
+  if (enemyLookSfxCooldownMs <= 0) {
+    const maxDist = 9;
+    const halfAngle = (8 * Math.PI) / 180;
+
+    let seen = false;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > maxDist) continue;
+
+      const angle = Math.atan2(player.y - e.y, e.x - player.x);
+      let rel = angle - player.rot;
+      rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+      if (Math.abs(rel) > halfAngle) continue;
+      if (!hasLineOfSight(player.x, player.y, e.x, e.y)) continue;
+
+      seen = true;
+      break;
+    }
+
+    if (seen) {
+      audio.playSfx('enemy', 0.55);
+      enemyLookSfxCooldownMs = 900;
     }
   }
 }

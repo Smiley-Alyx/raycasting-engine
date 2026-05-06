@@ -13,7 +13,7 @@ export function createRenderer({
   getViewWidth: () => number;
   getViewHeight: () => number;
   player: Player;
-  getEnemies?: () => Array<{ x: number; y: number; alive: boolean }>;
+  getEnemies?: () => Array<{ x: number; y: number; alive: boolean; attackFlashMs?: number }>;
 }) {
   let ceilingColor = '#E3E3E1';
   let floorColor = '#858585';
@@ -171,6 +171,18 @@ export function createRenderer({
         const u = (x - x0) / Math.max(1, x1 - x0);
         const sx = Math.floor(u * texW);
         ctx.drawImage(texture, sx, 0, 1, texH, x, y0, 1, spriteHeight);
+      }
+
+      const flashMs = item.e.attackFlashMs ?? 0;
+      if (flashMs > 0) {
+        const t = Math.max(0, Math.min(1, flashMs / 220));
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 50, 50, ${0.25 + 0.6 * t})`;
+        ctx.lineWidth = Math.max(1, Math.floor(spriteWidth * 0.02));
+        ctx.shadowColor = `rgba(255, 0, 0, ${0.35 + 0.5 * t})`;
+        ctx.shadowBlur = Math.max(2, Math.floor(spriteWidth * 0.18));
+        ctx.strokeRect(x0 + 0.5, y0 + 0.5, Math.max(1, x1 - x0), Math.max(1, spriteHeight));
+        ctx.restore();
       }
     }
   }
