@@ -5,7 +5,7 @@ import { createInput } from '../input/input';
 import { createRenderer } from './render/renderer';
 import { AudioManager } from './audio/audio-manager';
 import { DEFAULT_SFX } from './audio/sfx-config';
-import { hitWall } from '../state/map-state';
+import { getMap, hitWall } from '../state/map-state';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
@@ -28,6 +28,53 @@ let enemies: Enemy[] = [];
 
 export function setEnemies(next: Array<{ x: number; y: number }>) {
   enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false, attackFlashMs: 0 }));
+}
+
+function trySpawnEnemyAfterDoorOpen(xMap: number, yMap: number) {
+  // 1/3 chance to spawn an enemy somewhere just behind the door.
+  if (Math.random() >= 1 / 3) return;
+
+  const map = getMap();
+  if (!map) return;
+  const w = map[0]?.length ?? 0;
+  const h = map.length;
+  if (w <= 0 || h <= 0) return;
+
+  const doorCx = xMap + 0.5;
+  const doorCy = yMap + 0.5;
+  const dx = doorCx - player.x;
+  const dy = doorCy - player.y;
+
+  let stepX = 0;
+  let stepY = 0;
+  if (Math.abs(dx) >= Math.abs(dy)) stepX = Math.sign(dx);
+  else stepY = Math.sign(dy);
+
+  const candidates: Array<{ x: number; y: number }> = [];
+  // Primary: cell behind the door (further from player).
+  candidates.push({ x: xMap + stepX, y: yMap + stepY });
+  // Fallback: the door cell itself.
+  candidates.push({ x: xMap, y: yMap });
+  // Side cells around the door.
+  candidates.push({ x: xMap + stepY, y: yMap - stepX });
+  candidates.push({ x: xMap - stepY, y: yMap + stepX });
+
+  const enemyR = 0.24;
+  const minPlayerDist = 0.9;
+
+  for (const c of candidates) {
+    if (c.x < 0 || c.x >= w || c.y < 0 || c.y >= h) continue;
+    if (map[c.y][c.x] !== 0) continue;
+
+    const ex = c.x + 0.5;
+    const ey = c.y + 0.5;
+    if (Math.hypot(ex - player.x, ey - player.y) < minPlayerDist) continue;
+    if (hitWallCircle(ex, ey, enemyR)) continue;
+    if (hitEnemyCircle(ex, ey, enemyR * 2.2)) continue;
+
+    enemies.push({ x: ex, y: ey, alive: true, alerted: true, attackFlashMs: 0 });
+    return;
+  }
 }
 
 function hitWallCircle(x: number, y: number, r: number): boolean {
@@ -306,8 +353,9 @@ function ensureEngine() {
       return hitWallCircle(x, y, playerRadius) || hitEnemyCircle(x, y, playerRadius + 0.26);
     },
     events: {
-      onDoorOpen: () => {
+      onDoorOpen: (xMap: number, yMap: number) => {
         audio.playSfx('doorOpen');
+        trySpawnEnemyAfterDoorOpen(xMap, yMap);
       },
       onFootstep: () => {
         audio.playSfx('footstep');
