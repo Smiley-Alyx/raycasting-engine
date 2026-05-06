@@ -9,7 +9,7 @@
   },
   "audio": {
     "music": {
-      "src": "/audio/music/level1/level1.wav",
+      "src": "/audio/music/level_1.wav",
       "loop": true,
       "volume": 0.5
     }

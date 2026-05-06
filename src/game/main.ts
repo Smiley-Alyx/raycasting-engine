@@ -22,6 +22,17 @@ import { DEFAULT_SFX } from './audio/sfx-config';
 
 const CUSTOM_LEVEL_STORAGE_KEY = 'rayc.customLevel';
 
+function getDefaultMusicForLevelId(levelId: string) {
+  const base = new URL(import.meta.env.BASE_URL, window.location.origin);
+  const m = /^level(\d+)$/.exec(levelId);
+  const src = m ? `/audio/music/level_${m[1]}.wav` : '/audio/music/main.wav';
+  return {
+    src: new URL(src.startsWith('/') ? src.slice(1) : src, base).toString(),
+    loop: true,
+    volume: 0.5,
+  };
+}
+
 function cloneGrid(grid: number[][]) {
   return grid.map((row) => row.slice());
 }
@@ -272,7 +283,7 @@ async function startLevelById(levelId: string) {
   setEnemies(placeRandomEnemies({ grid: level.grid, player: p, enemyCellId: 9 }));
 
   setAudioConfig({
-    music: level.audio?.music ?? null,
+    music: level.audio?.music ?? getDefaultMusicForLevelId(levelEntry.id),
     sfx: DEFAULT_SFX,
   });
   playMusic();
@@ -336,7 +347,7 @@ async function maybeStartCustomFromEditor() {
   setEnemies(placeRandomEnemies({ grid, player: p, enemyCellId: 9 }));
 
   setAudioConfig({
-    music: level.audio?.music ?? null,
+    music: level.audio?.music ?? getDefaultMusicForLevelId('custom'),
     sfx: DEFAULT_SFX,
   });
   playMusic();
