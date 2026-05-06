@@ -10,7 +10,6 @@ const textureById = new Map<number, string | AtlasSlice>([
 
 const materialToTextureId: Map<string, number> = new Map([
   ['wall', 1],
-  ['brick', 1],
   ['window', 2],
   ['door', 3],
   ['stand', 4],
