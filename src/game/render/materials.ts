@@ -1,13 +1,10 @@
-const textureById: Map<number, string> = new Map([
-  [1, 'wall'],
-  [2, 'window'],
-  [3, 'door'],
-  [4, 'stand1'],
-  [5, 'stand2'],
-  [6, 'stand3'],
-  [7, 'stand4'],
-  [8, 'GStand1'],
-  [9, 'GStand2'],
+type AtlasSlice = { domId: string; tile: number };
+
+const textureById = new Map<number, string | AtlasSlice>([
+  [1, { domId: 'wallAtlas', tile: 0 }],
+  [2, { domId: 'windowAtlas', tile: 0 }],
+  [3, { domId: 'doorAtlas', tile: 0 }],
+  [4, { domId: 'standAtlas', tile: 0 }],
   [10, 'enemy'],
 ]);
 
@@ -16,33 +13,59 @@ const materialToTextureId: Map<string, number> = new Map([
   ['brick', 1],
   ['window', 2],
   ['door', 3],
-  ['stand1', 4],
-  ['stand2', 5],
-  ['stand3', 6],
+  ['stand', 4],
   ['enemy', 10],
-  ['stand4', 7],
-  ['gstand1', 8],
-  ['gstand2', 9],
 ]);
 
-const cache: Map<string, HTMLImageElement | null> = new Map();
+const cache: Map<string, CanvasImageSource | null> = new Map();
 
-function getDomTextureByNumericId(id: number): HTMLImageElement | null {
-  const domId = textureById.get(id);
-  if (!domId) return null;
+function getDomTextureByNumericId(id: number): CanvasImageSource | null {
+  const entry = textureById.get(id);
+  if (!entry) return null;
 
-  const cached = cache.get(domId);
+  const key = typeof entry === 'string' ? entry : `${entry.domId}#${entry.tile}`;
+  const cached = cache.get(key);
   if (cached !== undefined) return cached;
 
-  const el = document.getElementById(domId);
-  const img = el instanceof HTMLImageElement ? el : null;
-  cache.set(domId, img);
-  return img;
+  if (typeof entry === 'string') {
+    const el = document.getElementById(entry);
+    const img = el instanceof HTMLImageElement ? el : null;
+    cache.set(key, img);
+    return img;
+  }
+
+  const baseEl = document.getElementById(entry.domId);
+  const baseImg = baseEl instanceof HTMLImageElement ? baseEl : null;
+  if (!baseImg || baseImg.naturalWidth <= 0 || baseImg.naturalHeight <= 0) {
+    cache.set(key, null);
+    return null;
+  }
+
+  const cols = 4;
+  const rows = 4;
+  const tileW = Math.floor(baseImg.naturalWidth / cols);
+  const tileH = Math.floor(baseImg.naturalHeight / rows);
+  const tx = entry.tile % cols;
+  const ty = Math.floor(entry.tile / cols);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = tileW;
+  canvas.height = tileH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    cache.set(key, null);
+    return null;
+  }
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(baseImg, tx * tileW, ty * tileH, tileW, tileH, 0, 0, tileW, tileH);
+
+  cache.set(key, canvas);
+  return canvas;
 }
 
 export function getTextureForMaterial(
   materialOrId: string | number,
-): HTMLImageElement | null {
+): CanvasImageSource | null {
   if (typeof materialOrId === 'number') {
     return getDomTextureByNumericId(materialOrId);
   }
