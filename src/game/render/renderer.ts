@@ -172,17 +172,20 @@ export function createRenderer({
       if (item.distPerp <= 0.001) continue;
       if (Math.abs(item.rel) > player.fov / 2 + 0.2) continue;
 
-      let spriteHeight = (1 / item.distPerp) * distanceProjectionPlane;
+      const wallHeight = (1 / item.distPerp) * distanceProjectionPlane;
+      let spriteHeight = wallHeight;
 
       // Prevent very tall sprites from being cropped in shorter viewports.
       const maxSpriteH = h * 0.92;
       if (spriteHeight > maxSpriteH) spriteHeight = maxSpriteH;
 
       const spriteWidth = spriteHeight * texAspect;
-      const screenX = (0.5 + item.rel / player.fov) * w;
+      // Perspective-correct projection. Linear rel/fov causes noticeable lateral drift.
+      const screenX = w / 2 + Math.tan(item.rel) * distanceProjectionPlane;
       const x0 = Math.floor(screenX - spriteWidth / 2);
       const x1 = Math.floor(screenX + spriteWidth / 2);
-      const y0 = Math.floor(h / 2 - spriteHeight / 2);
+      // Anchor sprite to the floor (bottom of the wall slice at same depth).
+      const y0 = Math.floor(h / 2 + wallHeight / 2 - spriteHeight);
 
       for (let x = x0; x <= x1; x++) {
         if (x < 0 || x >= w) continue;
