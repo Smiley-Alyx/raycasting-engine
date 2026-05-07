@@ -5,7 +5,7 @@ import { createInput } from '../input/input';
 import { createRenderer } from './render/renderer';
 import { AudioManager } from './audio/audio-manager';
 import { DEFAULT_SFX } from './audio/sfx-config';
-import { getMap, hitWall, isDoorCell, setCell } from '../state/map-state';
+import { getMap, hitWall, isDoorCell, setCell, setMap as setMapState } from '../state/map-state';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
@@ -53,6 +53,9 @@ type HealthPickup = {
 };
 
 let healthPickups: HealthPickup[] = [];
+
+let healthFloorCandidates: Array<{ x: number; y: number }> = [];
+let healthSpawnCooldownMs = 0;
 
 let enemyGridW = 0;
 let enemyGridH = 0;
@@ -322,12 +325,13 @@ export function getEnemies() {
 
 export function setHealthPickups(next: Array<{ x: number; y: number }>) {
   healthPickups = next.map((p) => ({ x: p.x, y: p.y, alive: true }));
+  healthSpawnCooldownMs = 0;
 }
 
 export function getSprites() {
-  const sprites: Array<{ x: number; y: number; material: string; alive: boolean }> = [];
+  const sprites: Array<{ x: number; y: number; material: string; alive: boolean; scale?: number }> = [];
   for (const p of healthPickups) {
-    sprites.push({ x: p.x, y: p.y, material: 'health', alive: p.alive });
+    sprites.push({ x: p.x, y: p.y, material: 'health', alive: p.alive, scale: 0.33 });
   }
   return sprites;
 }
@@ -338,13 +342,64 @@ function updatePickups() {
   for (const p of healthPickups) {
     if (!p.alive) continue;
     if (Math.hypot(player.x - p.x, player.y - p.y) > pickupR) continue;
-    const before = player.hp;
     player.hp = Math.min(player.maxHp, player.hp + 20);
-    if (player.hp !== before) {
-      p.alive = false;
-      audio.playSfx('health');
-    }
+    p.alive = false;
+    audio.playSfx('health');
   }
+}
+
+function countAliveHealthPickups() {
+  let n = 0;
+  for (const p of healthPickups) if (p.alive) n++;
+  return n;
+}
+
+function hitHealthPickupCircle(x: number, y: number, r: number): boolean {
+  for (const p of healthPickups) {
+    if (!p.alive) continue;
+    const d = Math.hypot(x - p.x, y - p.y);
+    if (d < r) return true;
+  }
+  return false;
+}
+
+function desiredHealthPickupCount(): number {
+  const missing = Math.max(0, player.maxHp - player.hp);
+  const missingRatio = player.maxHp > 0 ? missing / player.maxHp : 0;
+
+  const base = currentDifficulty === 'lost' ? 8 : currentDifficulty === 'trapped' ? 5 : 3;
+  const factor = currentDifficulty === 'lost' ? 1.35 : currentDifficulty === 'trapped' ? 1.75 : 2.15;
+  return Math.max(0, Math.round(base * (1 + missingRatio * factor)));
+}
+
+function updateHealthSpawning(dt: number) {
+  if (!healthFloorCandidates.length) return;
+  if (player.hp <= 0) return;
+
+  healthSpawnCooldownMs = Math.max(0, healthSpawnCooldownMs - dt);
+  if (healthSpawnCooldownMs > 0) return;
+
+  const desired = desiredHealthPickupCount();
+  const alive = countAliveHealthPickups();
+  if (alive >= desired) return;
+
+  const tries = 18;
+  const pickupR = 0.25;
+  const minPlayerDist = currentDifficulty === 'lost' ? 2.1 : currentDifficulty === 'trapped' ? 2.35 : 2.55;
+
+  for (let i = 0; i < tries; i++) {
+    const c = healthFloorCandidates[Math.floor(Math.random() * healthFloorCandidates.length)];
+    const x = c.x + 0.5;
+    const y = c.y + 0.5;
+    if (Math.hypot(x - player.x, y - player.y) < minPlayerDist) continue;
+    if (hitWallCircle(x, y, pickupR)) continue;
+    if (hitEnemyCircle(x, y, pickupR * 3.0)) continue;
+    if (hitHealthPickupCircle(x, y, pickupR * 4.0)) continue;
+    healthPickups.push({ x, y, alive: true });
+    break;
+  }
+
+  healthSpawnCooldownMs = currentDifficulty === 'lost' ? 2500 : currentDifficulty === 'trapped' ? 3400 : 4300;
 }
 
 function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number): boolean {
@@ -656,6 +711,7 @@ function updateEnemies(dt: number) {
       ) {
         const dmg = rollEnemyDamage(e.kind, currentDifficulty);
         player.hp = Math.max(0, player.hp - dmg);
+        audio.playSfx(e.kind === 'zombie' ? 'zombie' : 'enemy');
         audio.playSfx('damage');
         e.attackFlashMs = 220;
         renderer?.triggerDamagePulse();
@@ -792,6 +848,7 @@ function ensureEngine() {
       onTick: (dt: number) => {
         updateEnemies(dt);
         updatePickups();
+        updateHealthSpawning(dt);
       },
     },
   });
@@ -808,10 +865,21 @@ export function triggerDeathOverlay() {
   renderer?.triggerKillFill();
 }
 
-export function setMap(newMap: Grid) {
-  ensureEngine().setMap(newMap);
+export function setMap(grid: number[][]) {
+  ensureEngine();
+  setMapState(grid);
   ensureEnemyGridForCurrentMap();
   rebuildEnemyGridFromEnemies();
+
+  healthFloorCandidates = [];
+  const w = grid[0]?.length ?? 0;
+  const h = grid.length;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (grid[y][x] !== 0) continue;
+      healthFloorCandidates.push({ x, y });
+    }
+  }
 }
 
 export function setSpawn(spawn: Spawn | null) {

@@ -15,7 +15,7 @@ export function createRenderer({
   getViewHeight: () => number;
   player: Player;
   getEnemies?: () => Array<{ x: number; y: number; alive: boolean; attackFlashMs?: number }>;
-  getSprites?: () => Array<{ x: number; y: number; material: string; alive: boolean }>;
+  getSprites?: () => Array<{ x: number; y: number; material: string; alive: boolean; scale?: number }>;
 }) {
   let ceilingColor = '#E3E3E1';
   let floorColor = '#858585';
@@ -141,7 +141,7 @@ export function createRenderer({
 
   function drawSpriteList(
     zBuffer: Float64Array,
-    listIn: Array<{ x: number; y: number; alive: boolean; material: string; attackFlashMs?: number }>,
+    listIn: Array<{ x: number; y: number; alive: boolean; material: string; attackFlashMs?: number; scale?: number }>,
   ) {
     if (!listIn.length) return;
 
@@ -176,7 +176,8 @@ export function createRenderer({
       const texAspect = texW / Math.max(1, texH);
 
       const wallHeight = (1 / item.distPerp) * distanceProjectionPlane;
-      let spriteHeight = wallHeight;
+      const scale = item.s.scale ?? 1;
+      let spriteHeight = wallHeight * scale;
 
       // Prevent very tall sprites from being cropped in shorter viewports.
       const maxSpriteH = h * 0.92;
@@ -219,12 +220,12 @@ export function createRenderer({
     const enemiesRaw = typeof getEnemies === 'function' ? getEnemies() : [];
     const enemies = enemiesRaw.map((e) => {
       const mat = (e as { kind?: string }).kind === 'zombie' ? 'zombie' : 'enemy';
-      return { x: e.x, y: e.y, alive: e.alive, material: mat, attackFlashMs: e.attackFlashMs };
+      return { x: e.x, y: e.y, alive: e.alive, material: mat, attackFlashMs: e.attackFlashMs, scale: 1 };
     });
     drawSpriteList(zBuffer, enemies);
 
     const spritesRaw = typeof getSprites === 'function' ? getSprites() : [];
-    const sprites = spritesRaw.map((s) => ({ x: s.x, y: s.y, alive: s.alive, material: s.material }));
+    const sprites = spritesRaw.map((s) => ({ x: s.x, y: s.y, alive: s.alive, material: s.material, scale: s.scale }));
     drawSpriteList(zBuffer, sprites);
   }
 
