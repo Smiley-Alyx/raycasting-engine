@@ -54,6 +54,8 @@ const textureById = new Map<number, string | AtlasSlice>([
   [314, { domId: 'standAtlas', tile: 14 }],
   [315, { domId: 'standAtlas', tile: 15 }],
   [10, 'enemy'],
+  [11, 'zombie'],
+  [12, 'health'],
 ]);
 
 const materialToTextureId: Map<string, number> = new Map([
@@ -62,6 +64,8 @@ const materialToTextureId: Map<string, number> = new Map([
   ['door', 3],
   ['stand', 4],
   ['enemy', 10],
+  ['zombie', 11],
+  ['health', 12],
 ]);
 
 const cache: Map<string, CanvasImageSource | null> = new Map();

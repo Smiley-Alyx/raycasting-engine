@@ -6,11 +6,12 @@ import {
   setLegend,
   setSpawn,
   setBackgroundColors,
+  setEnemies,
+  setHealthPickups,
   setAudioConfig,
   playMusic,
   unlockAudio,
   getPlayer,
-  setEnemies,
   setDifficulty,
   getAudioState,
   setMusicEnabled,
@@ -33,6 +34,96 @@ function getDefaultMusicForLevelId(levelId: string) {
     loop: true,
     volume: 0.5,
   };
+}
+
+function placeRandomHealthPickups({
+  grid,
+  player,
+  difficulty,
+}: {
+  grid: number[][];
+  player: ReturnType<typeof getPlayer>;
+  difficulty: Difficulty;
+}) {
+  const visible = computeInitialVisibleCells({
+    grid,
+    x: player.x,
+    y: player.y,
+    rot: player.rot,
+    fov: player.fov,
+  });
+
+  const w = grid[0]?.length ?? 0;
+  const h = grid.length;
+
+  const reachable = new Set<string>();
+  const q: Array<{ x: number; y: number }> = [];
+  const sx = Math.floor(player.x);
+  const sy = Math.floor(player.y);
+  if (sx >= 0 && sx < w && sy >= 0 && sy < h && grid[sy][sx] === 0) {
+    q.push({ x: sx, y: sy });
+    reachable.add(`${sx},${sy}`);
+  }
+  while (q.length) {
+    const { x, y } = q.shift()!;
+    const n = [
+      { x: x + 1, y },
+      { x: x - 1, y },
+      { x, y: y + 1 },
+      { x, y: y - 1 },
+    ];
+    for (const p of n) {
+      if (p.x < 0 || p.x >= w || p.y < 0 || p.y >= h) continue;
+      if (grid[p.y][p.x] !== 0) continue;
+      const key = `${p.x},${p.y}`;
+      if (reachable.has(key)) continue;
+      reachable.add(key);
+      q.push(p);
+    }
+  }
+
+  let divisor = 120;
+  let minCount = 3;
+  let maxCount = 10;
+  let minSpawnDist = 2.1;
+  if (difficulty === 'trapped') {
+    divisor = 150;
+    minCount = 2;
+    maxCount = 7;
+    minSpawnDist = 2.35;
+  }
+  if (difficulty === 'consumed') {
+    divisor = 200;
+    minCount = 1;
+    maxCount = 5;
+    minSpawnDist = 2.55;
+  }
+
+  const approxCount = Math.floor((w * h) / divisor);
+  const count = Math.max(minCount, Math.min(maxCount, approxCount));
+
+  const result: Array<{ x: number; y: number }> = [];
+  const used = new Set<string>();
+  let placed = 0;
+  let attempts = 0;
+
+  while (placed < count && attempts < 5000) {
+    attempts++;
+    const x = 1 + Math.floor(Math.random() * Math.max(1, w - 2));
+    const y = 1 + Math.floor(Math.random() * Math.max(1, h - 2));
+    if (grid[y][x] !== 0) continue;
+    const k = `${x},${y}`;
+    if (!reachable.has(k)) continue;
+    if (visible.has(k)) continue;
+    if (used.has(k)) continue;
+    const dist = Math.hypot(player.x - (x + 0.5), player.y - (y + 0.5));
+    if (dist < minSpawnDist) continue;
+    used.add(k);
+    result.push({ x: x + 0.5, y: y + 0.5 });
+    placed++;
+  }
+
+  return result;
 }
 
 function applyMenuAudio() {
@@ -96,16 +187,12 @@ function computeInitialVisibleCells({
 function placeRandomEnemies({
   grid,
   player,
-  enemyCellId,
   difficulty,
 }: {
   grid: number[][];
   player: ReturnType<typeof getPlayer>;
-  enemyCellId: number;
   difficulty: Difficulty;
 }) {
-  void enemyCellId;
-
   const visible = computeInitialVisibleCells({
     grid,
     x: player.x,
@@ -142,22 +229,22 @@ function placeRandomEnemies({
       q.push(p);
     }
   }
-  let divisor = 45;
-  let minCount = 12;
-  let maxCount = 34;
-  let minSpawnDist = 2.75;
+  let divisor = 34;
+  let minCount = 18;
+  let maxCount = 46;
+  let minSpawnDist = 2.55;
 
   if (difficulty === 'trapped') {
-    divisor = 34;
-    minCount = 18;
-    maxCount = 46;
-    minSpawnDist = 2.55;
-  }
-  if (difficulty === 'consumed') {
     divisor = 24;
     minCount = 28;
     maxCount = 70;
     minSpawnDist = 2.25;
+  }
+  if (difficulty === 'consumed') {
+    divisor = 14;
+    minCount = 70;
+    maxCount = 180;
+    minSpawnDist = 1.75;
   }
 
   const approxCount = Math.floor((w * h) / divisor);
@@ -165,7 +252,8 @@ function placeRandomEnemies({
   let placed = 0;
   let attempts = 0;
 
-  const result: Array<{ x: number; y: number }> = [];
+  const ghostW = difficulty === 'lost' ? 1 : difficulty === 'trapped' ? 2 : 4;
+  const result: Array<{ x: number; y: number; kind: 'zombie' | 'ghost' }> = [];
 
   while (placed < count && attempts < 5000) {
     attempts++;
@@ -176,11 +264,30 @@ function placeRandomEnemies({
     if (visible.has(`${x},${y}`)) continue;
     const dist = Math.hypot(player.x - (x + 0.5), player.y - (y + 0.5));
     if (dist < minSpawnDist) continue;
-    result.push({ x: x + 0.5, y: y + 0.5 });
+    const total = 10 + ghostW;
+    const kind = Math.random() * total < ghostW ? 'ghost' : 'zombie';
+    result.push({ x: x + 0.5, y: y + 0.5, kind });
     placed++;
   }
 
   return result;
+}
+
+function stripEnemyCellsFromGrid(grid: number[][], legend: Record<string, string>) {
+  if (!grid.length || !grid[0]?.length) return;
+  const enemyIds = new Set<number>();
+  for (const [k, v] of Object.entries(legend)) {
+    if (v === 'enemy' || v === 'zombie' || v === 'ghost') {
+      const id = Number(k);
+      if (Number.isFinite(id)) enemyIds.add(id);
+    }
+  }
+  if (!enemyIds.size) return;
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      if (enemyIds.has(grid[y][x])) grid[y][x] = 0;
+    }
+  }
 }
 
 function initAudioUi() {
@@ -408,13 +515,15 @@ async function startLevelById(levelId: string, difficulty: Difficulty) {
   }
 
   const level = await loadLevel(levelEntry.file);
+  stripEnemyCellsFromGrid(level.grid, level.legend);
   setLegend(level.legend);
   setMap(level.grid);
   setSpawn(level.spawn);
   setBackgroundColors(level.colors);
 
   const p = getPlayer();
-  setEnemies(placeRandomEnemies({ grid: level.grid, player: p, enemyCellId: 9, difficulty }));
+  setEnemies(placeRandomEnemies({ grid: level.grid, player: p, difficulty }));
+  setHealthPickups(placeRandomHealthPickups({ grid: level.grid, player: p, difficulty }));
 
   setAudioConfig({
     music: level.audio?.music ?? getDefaultMusicForLevelId(levelEntry.id),
@@ -473,12 +582,14 @@ async function maybeStartCustomFromEditor() {
   const baseLegend = level.legend as unknown as Record<string, string>;
   setLegend(baseLegend as unknown as Record<number, string>);
   const grid = level.rows.map((row) => row.split('').map((c) => Number(c) || 0));
+  stripEnemyCellsFromGrid(grid, baseLegend);
   setMap(grid);
   setSpawn(level.spawn);
   setBackgroundColors(level.colors ?? {});
 
   const p = getPlayer();
-  setEnemies(placeRandomEnemies({ grid, player: p, enemyCellId: 9, difficulty: 'lost' }));
+  setEnemies(placeRandomEnemies({ grid, player: p, difficulty: 'lost' }));
+  setHealthPickups(placeRandomHealthPickups({ grid, player: p, difficulty: 'lost' }));
 
   setAudioConfig({
     music: level.audio?.music ?? getDefaultMusicForLevelId('custom'),

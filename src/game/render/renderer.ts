@@ -8,12 +8,14 @@ export function createRenderer({
   getViewHeight,
   player,
   getEnemies,
+  getSprites,
 }: {
   ctx: CanvasRenderingContext2D;
   getViewWidth: () => number;
   getViewHeight: () => number;
   player: Player;
   getEnemies?: () => Array<{ x: number; y: number; alive: boolean; attackFlashMs?: number }>;
+  getSprites?: () => Array<{ x: number; y: number; material: string; alive: boolean }>;
 }) {
   let ceilingColor = '#E3E3E1';
   let floorColor = '#858585';
@@ -137,33 +139,30 @@ export function createRenderer({
     ctx.drawImage(texture, texX, 0, 1, texH, x, viewHeight / 2 - sliceHeight / 2, 1, sliceHeight);
   }
 
-  function drawSprites(zBuffer: Float64Array) {
-    const enemies = typeof getEnemies === 'function' ? getEnemies() : [];
-    if (!enemies.length) return;
+  function drawSpriteList(
+    zBuffer: Float64Array,
+    listIn: Array<{ x: number; y: number; alive: boolean; material: string; attackFlashMs?: number }>,
+  ) {
+    if (!listIn.length) return;
 
     const w = getViewWidth();
     const h = getViewHeight();
 
-    const texture = getTextureForMaterial('enemy');
-    if (!texture) return;
-
-    const { w: texW, h: texH } = getSourceSize(texture);
-    const texAspect = texW / Math.max(1, texH);
-
     const distanceProjectionPlane = w / 2 / Math.tan(player.fov / 2);
 
-    const list = enemies
-      .filter((e) => e.alive)
-      .map((e) => {
-        const dx = e.x - player.x;
-        const dy = e.y - player.y;
+    const list = listIn
+      .filter((s) => s.alive)
+      .map((s) => {
+        const dx = s.x - player.x;
+        const dy = s.y - player.y;
         const dist = Math.hypot(dx, dy);
-        // World uses y down; player forward is (cos(rot), -sin(rot)).
-        const angle = Math.atan2(player.y - e.y, e.x - player.x);
+        const angle = Math.atan2(player.y - s.y, s.x - player.x);
         let rel = angle - player.rot;
         rel = Math.atan2(Math.sin(rel), Math.cos(rel));
         const distPerp = dist * Math.cos(rel);
-        return { e, dist, distPerp, rel };
+
+        const texture = getTextureForMaterial(s.material);
+        return { s, dist, distPerp, rel, texture };
       })
       // back-to-front
       .sort((a, b) => b.dist - a.dist);
@@ -171,6 +170,10 @@ export function createRenderer({
     for (const item of list) {
       if (item.distPerp <= 0.001) continue;
       if (Math.abs(item.rel) > player.fov / 2 + 0.2) continue;
+      if (!item.texture) continue;
+
+      const { w: texW, h: texH } = getSourceSize(item.texture);
+      const texAspect = texW / Math.max(1, texH);
 
       const wallHeight = (1 / item.distPerp) * distanceProjectionPlane;
       let spriteHeight = wallHeight;
@@ -195,10 +198,10 @@ export function createRenderer({
 
         const u = (x - x0) / Math.max(1, x1 - x0);
         const sx = Math.floor(u * texW);
-        ctx.drawImage(texture, sx, 0, 1, texH, x, y0, 1, spriteHeight);
+        ctx.drawImage(item.texture, sx, 0, 1, texH, x, y0, 1, spriteHeight);
       }
 
-      const flashMs = item.e.attackFlashMs ?? 0;
+      const flashMs = item.s.attackFlashMs ?? 0;
       if (flashMs > 0) {
         const t = Math.max(0, Math.min(1, flashMs / 220));
         ctx.save();
@@ -210,6 +213,19 @@ export function createRenderer({
         ctx.restore();
       }
     }
+  }
+
+  function drawSprites(zBuffer: Float64Array) {
+    const enemiesRaw = typeof getEnemies === 'function' ? getEnemies() : [];
+    const enemies = enemiesRaw.map((e) => {
+      const mat = (e as { kind?: string }).kind === 'zombie' ? 'zombie' : 'enemy';
+      return { x: e.x, y: e.y, alive: e.alive, material: mat, attackFlashMs: e.attackFlashMs };
+    });
+    drawSpriteList(zBuffer, enemies);
+
+    const spritesRaw = typeof getSprites === 'function' ? getSprites() : [];
+    const sprites = spritesRaw.map((s) => ({ x: s.x, y: s.y, alive: s.alive, material: s.material }));
+    drawSpriteList(zBuffer, sprites);
   }
 
   function drawMap() {

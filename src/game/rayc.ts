@@ -15,12 +15,15 @@ type PlayerInstance = Player;
 
 export type Difficulty = 'lost' | 'trapped' | 'consumed';
 
+export type EnemyKind = 'zombie' | 'ghost';
+
 let engine: EngineInstance | null = null;
 let renderer: RendererInstance | null = null;
 
 type Enemy = {
   x: number;
   y: number;
+  kind: EnemyKind;
   tileX: number;
   tileY: number;
   targetTileX: number;
@@ -42,6 +45,14 @@ type Enemy = {
 };
 
 let enemies: Enemy[] = [];
+
+type HealthPickup = {
+  x: number;
+  y: number;
+  alive: boolean;
+};
+
+let healthPickups: HealthPickup[] = [];
 
 let enemyGridW = 0;
 let enemyGridH = 0;
@@ -101,7 +112,11 @@ function clearEnemyFromGrid(i: number, x: number, y: number) {
   if (enemyAt[idx] === i) enemyAt[idx] = -1;
 }
 
-function createEnemyAtWorld(x: number, y: number, opts?: { alerted?: boolean; attackFlashMs?: number }): Enemy {
+function createEnemyAtWorld(
+  x: number,
+  y: number,
+  opts?: { kind?: EnemyKind; alerted?: boolean; attackFlashMs?: number },
+): Enemy {
   const tileX = Math.floor(x);
   const tileY = Math.floor(y);
   const cx = tileX + 0.5;
@@ -110,6 +125,7 @@ function createEnemyAtWorld(x: number, y: number, opts?: { alerted?: boolean; at
   return {
     x: cx,
     y: cy,
+    kind: opts?.kind ?? 'ghost',
     tileX,
     tileY,
     targetTileX: tileX,
@@ -163,21 +179,62 @@ function updateDoors(dt: number) {
 let doorEnemySpawnChance = 1 / 3;
 let doorEnemyAggro = false;
 
+let currentDifficulty: Difficulty = 'lost';
+
+function ghostWeightForDifficulty(difficulty: Difficulty): number {
+  if (difficulty === 'lost') return 1;
+  if (difficulty === 'trapped') return 2;
+  return 4;
+}
+
+function rollEnemyKindFromDifficulty(difficulty: Difficulty): EnemyKind {
+  const ghostW = ghostWeightForDifficulty(difficulty);
+  const total = 10 + ghostW;
+  const r = Math.random() * total;
+  return r < ghostW ? 'ghost' : 'zombie';
+}
+
+function damageScaleForDifficulty(difficulty: Difficulty): number {
+  if (difficulty === 'lost') return 1.0;
+  if (difficulty === 'trapped') return 1.2;
+  return 1.55;
+}
+
+function rollEnemyDamage(kind: EnemyKind, difficulty: Difficulty): number {
+  const scale = damageScaleForDifficulty(difficulty);
+  if (kind === 'zombie') {
+    const baseMin = 4;
+    const baseMax = difficulty === 'lost' ? 7 : difficulty === 'trapped' ? 9 : 12;
+    const raw = baseMin + Math.floor(Math.random() * (baseMax - baseMin + 1));
+    return Math.max(1, Math.round(raw * scale));
+  }
+
+  const baseMin = 16;
+  const baseMax = difficulty === 'lost' ? 24 : difficulty === 'trapped' ? 28 : 36;
+  const raw = baseMin + Math.floor(Math.random() * (baseMax - baseMin + 1));
+  return Math.max(1, Math.round(raw * scale));
+}
+
 export function setDifficulty(difficulty: Difficulty) {
+  currentDifficulty = difficulty;
   if (difficulty === 'lost') {
-    doorEnemySpawnChance = 1 / 4;
-    doorEnemyAggro = false;
-  } else if (difficulty === 'trapped') {
-    doorEnemySpawnChance = 1 / 3;
-    doorEnemyAggro = false;
-  } else {
     doorEnemySpawnChance = 1 / 2;
+    doorEnemyAggro = true;
+  } else if (difficulty === 'trapped') {
+    doorEnemySpawnChance = 3 / 4;
+    doorEnemyAggro = true;
+  } else {
+    doorEnemySpawnChance = 0.95;
     doorEnemyAggro = true;
   }
 }
 
-export function setEnemies(next: Array<{ x: number; y: number }>) {
-  enemies = next.map((e) => createEnemyAtWorld(e.x, e.y));
+export function setEnemies(next: Array<{ x: number; y: number; kind?: EnemyKind }>) {
+  enemies = next.map((e) =>
+    createEnemyAtWorld(e.x, e.y, {
+      kind: e.kind ?? rollEnemyKindFromDifficulty(currentDifficulty),
+    }),
+  );
   rebuildEnemyGridFromEnemies();
 }
 
@@ -224,6 +281,7 @@ function trySpawnEnemyAfterDoorOpen(xMap: number, yMap: number) {
     if (hitEnemyCircle(ex, ey, enemyR * 2.2)) continue;
 
     const enemy = createEnemyAtWorld(ex, ey, {
+      kind: rollEnemyKindFromDifficulty(currentDifficulty),
       alerted: true,
       attackFlashMs: doorEnemyAggro ? 220 : 0,
     });
@@ -260,6 +318,33 @@ function hitEnemyCircle(x: number, y: number, r: number): boolean {
 
 export function getEnemies() {
   return enemies;
+}
+
+export function setHealthPickups(next: Array<{ x: number; y: number }>) {
+  healthPickups = next.map((p) => ({ x: p.x, y: p.y, alive: true }));
+}
+
+export function getSprites() {
+  const sprites: Array<{ x: number; y: number; material: string; alive: boolean }> = [];
+  for (const p of healthPickups) {
+    sprites.push({ x: p.x, y: p.y, material: 'health', alive: p.alive });
+  }
+  return sprites;
+}
+
+function updatePickups() {
+  if (!healthPickups.length) return;
+  const pickupR = 0.42;
+  for (const p of healthPickups) {
+    if (!p.alive) continue;
+    if (Math.hypot(player.x - p.x, player.y - p.y) > pickupR) continue;
+    const before = player.hp;
+    player.hp = Math.min(player.maxHp, player.hp + 20);
+    if (player.hp !== before) {
+      p.alive = false;
+      audio.playSfx('health');
+    }
+  }
 }
 
 function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number): boolean {
@@ -569,7 +654,7 @@ function updateEnemies(dt: number) {
         dist < 1.35 &&
         hasLineOfSight(e.x, e.y, player.x, player.y)
       ) {
-        const dmg = 5;
+        const dmg = rollEnemyDamage(e.kind, currentDifficulty);
         player.hp = Math.max(0, player.hp - dmg);
         audio.playSfx('damage');
         e.attackFlashMs = 220;
@@ -678,6 +763,7 @@ function ensureEngine() {
     getViewHeight,
     player,
     getEnemies: () => enemies,
+    getSprites: () => getSprites(),
   });
   engine = createEngine({
     ctx,
@@ -705,6 +791,7 @@ function ensureEngine() {
       },
       onTick: (dt: number) => {
         updateEnemies(dt);
+        updatePickups();
       },
     },
   });
