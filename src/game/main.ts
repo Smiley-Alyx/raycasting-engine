@@ -233,12 +233,52 @@ function initAudioUi() {
 
 function initHpUi() {
   const hpEl = document.getElementById('hpText');
-  if (!(hpEl instanceof HTMLElement)) return;
-  const el = hpEl;
+  const hudHpEl = document.getElementById('hpTextHud');
+
+  const hudCanvasEl = document.getElementById('hudPortrait');
+  const hudCanvas = hudCanvasEl instanceof HTMLCanvasElement ? hudCanvasEl : null;
+  const hudCtx = hudCanvas ? hudCanvas.getContext('2d') : null;
+
+  const spriteEl = document.getElementById('playerSprite');
+  const spriteImg = spriteEl instanceof HTMLImageElement ? spriteEl : null;
+
+  if (!(hpEl instanceof HTMLElement) && !(hudHpEl instanceof HTMLElement)) return;
+  const sidebarEl = hpEl instanceof HTMLElement ? hpEl : null;
+  const hudEl = hudHpEl instanceof HTMLElement ? hudHpEl : null;
+
+  function renderPortrait(hpRatio: number) {
+    if (!hudCtx || !hudCanvas) return;
+    if (!spriteImg || spriteImg.naturalWidth <= 0 || spriteImg.naturalHeight <= 0) return;
+
+    const frames = 4;
+    const frameW = Math.floor(spriteImg.naturalWidth / frames);
+    const frameH = spriteImg.naturalHeight;
+
+    let idx = 0;
+    if (hpRatio <= 0.25) idx = 3;
+    else if (hpRatio <= 0.5) idx = 2;
+    else if (hpRatio <= 0.75) idx = 1;
+    else idx = 0;
+
+    hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
+    hudCtx.imageSmoothingEnabled = false;
+
+    const sx = idx * frameW;
+    const sy = 0;
+    const dw = hudCanvas.width;
+    const dh = hudCanvas.height;
+    hudCtx.drawImage(spriteImg, sx, sy, frameW, frameH, 0, 0, dw, dh);
+  }
 
   function update() {
     const p = getPlayer();
-    el.textContent = `HP: ${Math.max(0, Math.floor(p.hp))}/${Math.max(0, Math.floor(p.maxHp))}`;
+    const hp = Math.max(0, Math.floor(p.hp));
+    const maxHp = Math.max(1, Math.floor(p.maxHp));
+    const text = `HP: ${hp}/${maxHp}`;
+
+    if (sidebarEl) sidebarEl.textContent = text;
+    if (hudEl) hudEl.textContent = text;
+    renderPortrait(hp / maxHp);
     requestAnimationFrame(update);
   }
 

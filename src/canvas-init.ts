@@ -25,6 +25,8 @@ export function getCanvasCssHeight() {
     throw new Error('Missing #canvas1 element');
   }
 
+  const frame = document.getElementById('frame');
+
   const canvas = document.createElement('canvas');
   canvas.id = 'canvas';
 
@@ -45,13 +47,9 @@ export function getCanvasCssHeight() {
   // canvas.width/height задаём в device-пикселях, а логический размер (CSS px)
   // сохраняем отдельно, чтобы движок мог продолжать работать в "нормальных" пикселях.
   const resizeCanvas = (): void => {
-    // В fullscreen растягиваем canvas на весь экран.
-    // В обычном режиме используем размеры контейнера.
-    const isFullscreen = !!document.fullscreenElement;
-
     const rect = host.getBoundingClientRect();
-    const cssWidth = Math.max(1, isFullscreen ? window.innerWidth : Math.floor(rect.width));
-    const cssHeight = Math.max(1, isFullscreen ? window.innerHeight : Math.floor(rect.height));
+    const cssWidth = Math.max(1, Math.floor(rect.width));
+    const cssHeight = Math.max(1, Math.floor(rect.height));
     const dpr = window.devicePixelRatio || 1;
 
     canvasCssWidth = cssWidth;
@@ -79,7 +77,7 @@ export function getCanvasCssHeight() {
   const toggleFullscreen = async (): Promise<void> => {
     try {
       if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+        await (frame ?? document.documentElement).requestFullscreen();
       } else {
         await document.exitFullscreen();
       }

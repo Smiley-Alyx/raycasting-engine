@@ -41,6 +41,7 @@
           <img id="standAtlas" src="images/textures/stand.png" />
           <img id="enemy" src="images/sprites/enemy.png" />
           <img id="zombie" src="images/sprites/zombie.png" />
+          <img id="playerSprite" src="images/sprites/player.png" />
           <img id="goldKey" src="images/sprites/gold_key.png" />
           <img id="silverKey" src="images/sprites/silver_key.png" />
           <img id="bloodKey" src="images/sprites/blood_key.png" />
@@ -50,6 +51,14 @@
           </div>
           <script type="module" src="/src/game/main.ts"></script>
         </main>
+
+        <div class="hud" id="hudRoot">
+          <canvas id="hudPortrait" width="64" height="64"></canvas>
+          <div class="hud-stats">
+            <div class="hud-hp" id="hpTextHud">HP: 100/100</div>
+          </div>
+        </div>
+
         <aside class="sidebar">
           <section class="panel">
             <h2 class="panel-title">Status</h2>
