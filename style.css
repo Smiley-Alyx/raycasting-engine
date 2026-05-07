@@ -9,11 +9,11 @@ body {
   color: #d8d8d8;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
-  overflow: hidden;
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
