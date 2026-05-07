@@ -147,6 +147,9 @@ export function createRenderer({
     const texture = getTextureForMaterial('enemy');
     if (!texture) return;
 
+    const { w: texW, h: texH } = getSourceSize(texture);
+    const texAspect = texW / Math.max(1, texH);
+
     const distanceProjectionPlane = w / 2 / Math.tan(player.fov / 2);
 
     const list = enemies
@@ -169,14 +172,17 @@ export function createRenderer({
       if (item.distPerp <= 0.001) continue;
       if (Math.abs(item.rel) > player.fov / 2 + 0.2) continue;
 
-      const spriteHeight = (1 / item.distPerp) * distanceProjectionPlane;
-      const spriteWidth = spriteHeight;
+      let spriteHeight = (1 / item.distPerp) * distanceProjectionPlane;
+
+      // Prevent very tall sprites from being cropped in shorter viewports.
+      const maxSpriteH = h * 0.92;
+      if (spriteHeight > maxSpriteH) spriteHeight = maxSpriteH;
+
+      const spriteWidth = spriteHeight * texAspect;
       const screenX = (0.5 + item.rel / player.fov) * w;
       const x0 = Math.floor(screenX - spriteWidth / 2);
       const x1 = Math.floor(screenX + spriteWidth / 2);
       const y0 = Math.floor(h / 2 - spriteHeight / 2);
-
-      const { w: texW, h: texH } = getSourceSize(texture);
 
       for (let x = x0; x <= x1; x++) {
         if (x < 0 || x >= w) continue;
