@@ -1,21 +1,23 @@
 import '../canvas-init';
 import {
   startRayc,
-  setLegend,
-  setMap,
-  setSpawn,
-  setAudioConfig,
-  unlockAudio,
-  playMusic,
   stopRayc,
+  setMap,
+  setLegend,
+  setSpawn,
   setBackgroundColors,
+  setAudioConfig,
+  playMusic,
+  unlockAudio,
+  getPlayer,
+  setEnemies,
+  setDifficulty,
   getAudioState,
   setMusicEnabled,
   setSfxEnabled,
   setMusicVolume,
   setSfxVolume,
-  getPlayer,
-  setEnemies,
+  type Difficulty,
 } from './rayc';
 import { loadLevel, loadLevelsIndex } from './levels/level-loader';
 import { DEFAULT_SFX } from './audio/sfx-config';
@@ -95,10 +97,12 @@ function placeRandomEnemies({
   grid,
   player,
   enemyCellId,
+  difficulty,
 }: {
   grid: number[][];
   player: ReturnType<typeof getPlayer>;
   enemyCellId: number;
+  difficulty: Difficulty;
 }) {
   void enemyCellId;
 
@@ -138,10 +142,26 @@ function placeRandomEnemies({
       q.push(p);
     }
   }
-  const approxCount = Math.floor((w * h) / 45);
-  const count = Math.max(12, Math.min(34, approxCount));
+  let divisor = 45;
+  let minCount = 12;
+  let maxCount = 34;
+  let minSpawnDist = 2.75;
 
-  const minSpawnDist = 2.75;
+  if (difficulty === 'trapped') {
+    divisor = 34;
+    minCount = 18;
+    maxCount = 46;
+    minSpawnDist = 2.55;
+  }
+  if (difficulty === 'consumed') {
+    divisor = 24;
+    minCount = 28;
+    maxCount = 70;
+    minSpawnDist = 2.25;
+  }
+
+  const approxCount = Math.floor((w * h) / divisor);
+  const count = Math.max(minCount, Math.min(maxCount, approxCount));
   let placed = 0;
   let attempts = 0;
 
@@ -297,7 +317,7 @@ function enterDeathState() {
   }, 2000);
 }
 
-async function startLevelById(levelId: string) {
+async function startLevelById(levelId: string, difficulty: Difficulty) {
   unlockAudio();
 
   dead = false;
@@ -320,7 +340,7 @@ async function startLevelById(levelId: string) {
   setBackgroundColors(level.colors);
 
   const p = getPlayer();
-  setEnemies(placeRandomEnemies({ grid: level.grid, player: p, enemyCellId: 9 }));
+  setEnemies(placeRandomEnemies({ grid: level.grid, player: p, enemyCellId: 9, difficulty }));
 
   setAudioConfig({
     music: level.audio?.music ?? getDefaultMusicForLevelId(levelEntry.id),
@@ -384,7 +404,7 @@ async function maybeStartCustomFromEditor() {
   setBackgroundColors(level.colors ?? {});
 
   const p = getPlayer();
-  setEnemies(placeRandomEnemies({ grid, player: p, enemyCellId: 9 }));
+  setEnemies(placeRandomEnemies({ grid, player: p, enemyCellId: 9, difficulty: 'lost' }));
 
   setAudioConfig({
     music: level.audio?.music ?? getDefaultMusicForLevelId('custom'),
@@ -402,7 +422,33 @@ function initMenu() {
   hideDeathScreen();
 
   const levelsRoot = document.getElementById('menuLevels');
+  const difficultyRoot = document.getElementById('menuDifficulty');
   const editorBtn = document.getElementById('menuEditorBtn');
+
+  let currentDifficulty: Difficulty = 'lost';
+
+  if (difficultyRoot instanceof HTMLElement) {
+    const opts: Array<{ id: Difficulty; label: string }> = [
+      { id: 'lost', label: 'Lost — easy' },
+      { id: 'trapped', label: 'Trapped — medium' },
+      { id: 'consumed', label: 'Consumed — hard' },
+    ];
+    difficultyRoot.innerHTML = '';
+
+    for (const o of opts) {
+      const btn = document.createElement('button');
+      btn.className = 'btn' + (o.id === currentDifficulty ? ' is-selected' : '');
+      btn.type = 'button';
+      btn.textContent = o.label;
+      btn.addEventListener('click', () => {
+        currentDifficulty = o.id;
+        const all = difficultyRoot.querySelectorAll('button');
+        for (const b of Array.from(all)) b.classList.remove('is-selected');
+        btn.classList.add('is-selected');
+      });
+      difficultyRoot.appendChild(btn);
+    }
+  }
 
   if (levelsRoot instanceof HTMLElement) {
     void (async () => {
@@ -417,7 +463,8 @@ function initMenu() {
           btn.type = 'button';
           btn.textContent = level.name ?? level.id;
           btn.addEventListener('click', () => {
-            void startLevelById(level.id);
+            setDifficulty(currentDifficulty);
+            void startLevelById(level.id, currentDifficulty);
           });
           levelsRoot.appendChild(btn);
         }
@@ -430,7 +477,8 @@ function initMenu() {
         btn.type = 'button';
         btn.textContent = 'Start';
         btn.addEventListener('click', () => {
-          void startLevelById('level1');
+          setDifficulty(currentDifficulty);
+          void startLevelById('level1', currentDifficulty);
         });
         levelsRoot.appendChild(btn);
       }

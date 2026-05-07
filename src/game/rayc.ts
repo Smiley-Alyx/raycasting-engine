@@ -13,6 +13,8 @@ type RendererInstance = ReturnType<typeof createRenderer>;
 
 type PlayerInstance = Player;
 
+export type Difficulty = 'lost' | 'trapped' | 'consumed';
+
 let engine: EngineInstance | null = null;
 let renderer: RendererInstance | null = null;
 
@@ -26,13 +28,29 @@ type Enemy = {
 
 let enemies: Enemy[] = [];
 
+let doorEnemySpawnChance = 1 / 3;
+let doorEnemyAggro = false;
+
+export function setDifficulty(difficulty: Difficulty) {
+  if (difficulty === 'lost') {
+    doorEnemySpawnChance = 1 / 4;
+    doorEnemyAggro = false;
+  } else if (difficulty === 'trapped') {
+    doorEnemySpawnChance = 1 / 3;
+    doorEnemyAggro = false;
+  } else {
+    doorEnemySpawnChance = 1 / 2;
+    doorEnemyAggro = true;
+  }
+}
+
 export function setEnemies(next: Array<{ x: number; y: number }>) {
   enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false, attackFlashMs: 0 }));
 }
 
 function trySpawnEnemyAfterDoorOpen(xMap: number, yMap: number) {
-  // 1/3 chance to spawn an enemy somewhere just behind the door.
-  if (Math.random() >= 1 / 3) return;
+  // Spawn chance configured by difficulty.
+  if (Math.random() >= doorEnemySpawnChance) return;
 
   const map = getMap();
   if (!map) return;
@@ -72,7 +90,13 @@ function trySpawnEnemyAfterDoorOpen(xMap: number, yMap: number) {
     if (hitWallCircle(ex, ey, enemyR)) continue;
     if (hitEnemyCircle(ex, ey, enemyR * 2.2)) continue;
 
-    enemies.push({ x: ex, y: ey, alive: true, alerted: true, attackFlashMs: 0 });
+    enemies.push({
+      x: ex,
+      y: ey,
+      alive: true,
+      alerted: true,
+      attackFlashMs: doorEnemyAggro ? 220 : 0,
+    });
     return;
   }
 }

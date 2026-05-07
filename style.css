@@ -149,6 +149,11 @@ body {
   cursor: pointer;
 }
 
+.btn.is-selected {
+  background: #3a2418;
+  border-color: #f3d27a;
+}
+
 .btn:active {
   transform: translateY(1px);
 }
