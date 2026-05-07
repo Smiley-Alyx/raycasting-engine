@@ -233,7 +233,13 @@ function initAudioUi() {
 
 function initHpUi() {
   const hpEl = document.getElementById('hpText');
-  const hudHpEl = document.getElementById('hpTextHud');
+  const hudHpEl = document.getElementById('hudHealthValue');
+  const hudAmmoEl = document.getElementById('hudAmmoValue');
+  const hudArmorEl = document.getElementById('hudArmorValue');
+
+  const keyGoldEl = document.getElementById('hudKeyGold');
+  const keySilverEl = document.getElementById('hudKeySilver');
+  const keyBloodEl = document.getElementById('hudKeyBlood');
 
   const hudCanvasEl = document.getElementById('hudPortrait');
   const hudCanvas = hudCanvasEl instanceof HTMLCanvasElement ? hudCanvasEl : null;
@@ -245,6 +251,14 @@ function initHpUi() {
   if (!(hpEl instanceof HTMLElement) && !(hudHpEl instanceof HTMLElement)) return;
   const sidebarEl = hpEl instanceof HTMLElement ? hpEl : null;
   const hudEl = hudHpEl instanceof HTMLElement ? hudHpEl : null;
+  const ammoEl = hudAmmoEl instanceof HTMLElement ? hudAmmoEl : null;
+  const armorEl = hudArmorEl instanceof HTMLElement ? hudArmorEl : null;
+
+  // Inventory not implemented yet. Keep Doom-like slots prepared.
+  const ownedKeys = { gold: false, silver: false, blood: false };
+  if (keyGoldEl instanceof HTMLImageElement) keyGoldEl.classList.toggle('is-owned', ownedKeys.gold);
+  if (keySilverEl instanceof HTMLImageElement) keySilverEl.classList.toggle('is-owned', ownedKeys.silver);
+  if (keyBloodEl instanceof HTMLImageElement) keyBloodEl.classList.toggle('is-owned', ownedKeys.blood);
 
   function renderPortrait(hpRatio: number) {
     if (!hudCtx || !hudCanvas) return;
@@ -260,14 +274,30 @@ function initHpUi() {
     else if (hpRatio <= 0.75) idx = 1;
     else idx = 0;
 
-    hudCtx.clearRect(0, 0, hudCanvas.width, hudCanvas.height);
-    hudCtx.imageSmoothingEnabled = false;
-
     const sx = idx * frameW;
     const sy = 0;
+
     const dw = hudCanvas.width;
     const dh = hudCanvas.height;
-    hudCtx.drawImage(spriteImg, sx, sy, frameW, frameH, 0, 0, dw, dh);
+
+    hudCtx.clearRect(0, 0, dw, dh);
+    hudCtx.imageSmoothingEnabled = false;
+
+    // Letterbox to avoid squishing the face.
+    const srcAspect = frameW / frameH;
+    const dstAspect = dw / dh;
+    let drawW = dw;
+    let drawH = dh;
+    if (dstAspect > srcAspect) {
+      drawW = Math.floor(dh * srcAspect);
+      drawH = dh;
+    } else {
+      drawW = dw;
+      drawH = Math.floor(dw / srcAspect);
+    }
+    const dx = Math.floor((dw - drawW) / 2);
+    const dy = Math.floor((dh - drawH) / 2);
+    hudCtx.drawImage(spriteImg, sx, sy, frameW, frameH, dx, dy, drawW, drawH);
   }
 
   function update() {
@@ -275,9 +305,13 @@ function initHpUi() {
     const hp = Math.max(0, Math.floor(p.hp));
     const maxHp = Math.max(1, Math.floor(p.maxHp));
     const text = `HP: ${hp}/${maxHp}`;
+    const pct = Math.max(0, Math.min(999, Math.round((hp / maxHp) * 100)));
 
     if (sidebarEl) sidebarEl.textContent = text;
-    if (hudEl) hudEl.textContent = text;
+    if (hudEl) hudEl.textContent = `${pct}%`;
+
+    if (ammoEl) ammoEl.textContent = '50';
+    if (armorEl) armorEl.textContent = '0%';
     renderPortrait(hp / maxHp);
     requestAnimationFrame(update);
   }
