@@ -180,8 +180,9 @@ export function createRenderer({
       if (spriteHeight > maxSpriteH) spriteHeight = maxSpriteH;
 
       const spriteWidth = spriteHeight * texAspect;
-      // Perspective-correct projection. Linear rel/fov causes noticeable lateral drift.
-      const screenX = w / 2 + Math.tan(item.rel) * distanceProjectionPlane;
+      // Match wall ray columns: walls are cast with linear angle step across screen,
+      // so sprites must use the same mapping to stay consistent with zBuffer.
+      const screenX = (0.5 + item.rel / player.fov) * w;
       const x0 = Math.floor(screenX - spriteWidth / 2);
       const x1 = Math.floor(screenX + spriteWidth / 2);
       // Anchor sprite to the floor (bottom of the wall slice at same depth).
