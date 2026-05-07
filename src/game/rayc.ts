@@ -5,7 +5,7 @@ import { createInput } from '../input/input';
 import { createRenderer } from './render/renderer';
 import { AudioManager } from './audio/audio-manager';
 import { DEFAULT_SFX } from './audio/sfx-config';
-import { getMap, hitWall } from '../state/map-state';
+import { getMap, hitWall, isDoorCell, setCell } from '../state/map-state';
 
 type EngineInstance = ReturnType<typeof createEngine>;
 
@@ -21,12 +21,144 @@ let renderer: RendererInstance | null = null;
 type Enemy = {
   x: number;
   y: number;
+  tileX: number;
+  tileY: number;
+  targetTileX: number;
+  targetTileY: number;
+  moveRemain: number;
+  moveDirX: number;
+  moveDirY: number;
+  mode: 'idle' | 'patrol' | 'chase' | 'wait';
+  decisionCooldownMs: number;
+  waitTileX: number;
+  waitTileY: number;
+  waitDirX: number;
+  waitDirY: number;
+  queuedDirX: number;
+  queuedDirY: number;
   alive: boolean;
   alerted: boolean;
   attackFlashMs: number;
 };
 
 let enemies: Enemy[] = [];
+
+let enemyGridW = 0;
+let enemyGridH = 0;
+let enemyAt: Int32Array | null = null;
+
+function ensureEnemyGridForCurrentMap() {
+  const map = getMap();
+  if (!map || !map.length || !map[0]?.length) {
+    enemyGridW = 0;
+    enemyGridH = 0;
+    enemyAt = null;
+    return;
+  }
+
+  const w = map[0].length;
+  const h = map.length;
+  if (w === enemyGridW && h === enemyGridH && enemyAt) return;
+
+  enemyGridW = w;
+  enemyGridH = h;
+  enemyAt = new Int32Array(w * h);
+  enemyAt.fill(-1);
+}
+
+function enemyIndex(x: number, y: number) {
+  return y * enemyGridW + x;
+}
+
+function clearEnemyGrid() {
+  if (!enemyAt) return;
+  enemyAt.fill(-1);
+}
+
+function rebuildEnemyGridFromEnemies() {
+  ensureEnemyGridForCurrentMap();
+  if (!enemyAt) return;
+  clearEnemyGrid();
+
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (!e.alive) continue;
+    if (e.tileX < 0 || e.tileX >= enemyGridW || e.tileY < 0 || e.tileY >= enemyGridH) continue;
+    enemyAt[enemyIndex(e.tileX, e.tileY)] = i;
+  }
+}
+
+function placeEnemyInGrid(i: number, x: number, y: number) {
+  if (!enemyAt) return;
+  if (x < 0 || x >= enemyGridW || y < 0 || y >= enemyGridH) return;
+  enemyAt[enemyIndex(x, y)] = i;
+}
+
+function clearEnemyFromGrid(i: number, x: number, y: number) {
+  if (!enemyAt) return;
+  if (x < 0 || x >= enemyGridW || y < 0 || y >= enemyGridH) return;
+  const idx = enemyIndex(x, y);
+  if (enemyAt[idx] === i) enemyAt[idx] = -1;
+}
+
+function createEnemyAtWorld(x: number, y: number, opts?: { alerted?: boolean; attackFlashMs?: number }): Enemy {
+  const tileX = Math.floor(x);
+  const tileY = Math.floor(y);
+  const cx = tileX + 0.5;
+  const cy = tileY + 0.5;
+  const alerted = opts?.alerted ?? false;
+  return {
+    x: cx,
+    y: cy,
+    tileX,
+    tileY,
+    targetTileX: tileX,
+    targetTileY: tileY,
+    moveRemain: 0,
+    moveDirX: 0,
+    moveDirY: 0,
+    mode: alerted ? 'chase' : 'patrol',
+    decisionCooldownMs: 0,
+    waitTileX: tileX,
+    waitTileY: tileY,
+    waitDirX: 0,
+    waitDirY: 0,
+    queuedDirX: 0,
+    queuedDirY: 0,
+    alive: true,
+    alerted,
+    attackFlashMs: opts?.attackFlashMs ?? 0,
+  };
+}
+
+type PendingDoor = {
+  x: number;
+  y: number;
+  openRemainingMs: number;
+};
+
+const pendingDoors: PendingDoor[] = [];
+
+function requestOpenDoor(xMap: number, yMap: number) {
+  if (!isDoorCell(xMap, yMap)) return;
+  if (pendingDoors.some((d) => d.x === xMap && d.y === yMap)) return;
+  pendingDoors.push({ x: xMap, y: yMap, openRemainingMs: 320 });
+}
+
+function updateDoors(dt: number) {
+  if (!pendingDoors.length) return;
+  const stepMs = dt * 1000;
+  for (let i = pendingDoors.length - 1; i >= 0; i--) {
+    const d = pendingDoors[i];
+    d.openRemainingMs -= stepMs;
+    if (d.openRemainingMs > 0) continue;
+
+    setCell(d.x, d.y, 0);
+    audio.playSfx('doorOpen');
+    trySpawnEnemyAfterDoorOpen(d.x, d.y);
+    pendingDoors.splice(i, 1);
+  }
+}
 
 let doorEnemySpawnChance = 1 / 3;
 let doorEnemyAggro = false;
@@ -45,7 +177,8 @@ export function setDifficulty(difficulty: Difficulty) {
 }
 
 export function setEnemies(next: Array<{ x: number; y: number }>) {
-  enemies = next.map((e) => ({ x: e.x, y: e.y, alive: true, alerted: false, attackFlashMs: 0 }));
+  enemies = next.map((e) => createEnemyAtWorld(e.x, e.y));
+  rebuildEnemyGridFromEnemies();
 }
 
 function trySpawnEnemyAfterDoorOpen(xMap: number, yMap: number) {
@@ -90,13 +223,12 @@ function trySpawnEnemyAfterDoorOpen(xMap: number, yMap: number) {
     if (hitWallCircle(ex, ey, enemyR)) continue;
     if (hitEnemyCircle(ex, ey, enemyR * 2.2)) continue;
 
-    enemies.push({
-      x: ex,
-      y: ey,
-      alive: true,
+    const enemy = createEnemyAtWorld(ex, ey, {
       alerted: true,
       attackFlashMs: doorEnemyAggro ? 220 : 0,
     });
+    enemies.push(enemy);
+    rebuildEnemyGridFromEnemies();
     return;
   }
 }
@@ -126,56 +258,6 @@ function hitEnemyCircle(x: number, y: number, r: number): boolean {
   return false;
 }
 
-function hitEnemyCircleExcept(x: number, y: number, r: number, except: Enemy): boolean {
-  for (const e of enemies) {
-    if (!e.alive) continue;
-    if (e === except) continue;
-    const d = Math.hypot(x - e.x, y - e.y);
-    if (d < r) return true;
-  }
-  return false;
-}
-
-function resolvePlayerEnemySeparation(dt: number) {
-  const playerR = 0.26;
-  const enemyR = 0.24;
-  const minDist = playerR + enemyR + 0.02;
-  const maxPush = 0.18 * dt;
-
-  for (const e of enemies) {
-    if (!e.alive) continue;
-    const dx = e.x - player.x;
-    const dy = e.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist <= 0.0001 || dist >= minDist) continue;
-
-    const overlap = Math.min(maxPush, minDist - dist);
-    const nx = dx / dist;
-    const ny = dy / dist;
-
-    const candidates: Array<{ x: number; y: number }> = [];
-    // Push directly away from player.
-    candidates.push({ x: e.x + nx * overlap, y: e.y + ny * overlap });
-    // If blocked, try slight side-steps to reduce "hard blocking" in corridors.
-    const px = -ny;
-    const py = nx;
-    const side = overlap * 0.85;
-    candidates.push({ x: e.x + nx * overlap + px * side, y: e.y + ny * overlap + py * side });
-    candidates.push({ x: e.x + nx * overlap - px * side, y: e.y + ny * overlap - py * side });
-    // Fallback: small direct side steps.
-    candidates.push({ x: e.x + px * side, y: e.y + py * side });
-    candidates.push({ x: e.x - px * side, y: e.y - py * side });
-
-    for (const c of candidates) {
-      if (hitWallCircle(c.x, c.y, enemyR)) continue;
-      if (hitEnemyCircleExcept(c.x, c.y, enemyR * 2, e)) continue;
-      e.x = c.x;
-      e.y = c.y;
-      break;
-    }
-  }
-}
-
 export function getEnemies() {
   return enemies;
 }
@@ -199,15 +281,173 @@ function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number):
 let enemyDamageCooldownMs = 0;
 let enemyInSight = false;
 
+function alertEnemiesFromNoise(x: number, y: number, radius: number) {
+  const r2 = radius * radius;
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (e.alerted) continue;
+    const dx = e.x - x;
+    const dy = e.y - y;
+    if (dx * dx + dy * dy > r2) continue;
+    e.alerted = true;
+    e.mode = 'chase';
+    e.decisionCooldownMs = 0;
+    e.queuedDirX = 0;
+    e.queuedDirY = 0;
+  }
+}
+
+function isCellBlockedForEnemy(xMap: number, yMap: number, selfIndex: number): boolean {
+  const map = getMap();
+  if (!map || !map.length || !map[0]?.length) return true;
+  const w = map[0].length;
+  const h = map.length;
+  if (xMap < 0 || xMap >= w || yMap < 0 || yMap >= h) return true;
+  if (map[yMap][xMap] !== 0) return true;
+
+  ensureEnemyGridForCurrentMap();
+  if (!enemyAt) return false;
+  const idx = enemyAt[enemyIndex(xMap, yMap)];
+  return idx !== -1 && idx !== selfIndex;
+}
+
+function tryStepEnemy(selfIndex: number, dirX: number, dirY: number): boolean {
+  const e = enemies[selfIndex];
+  if (!e || !e.alive) return false;
+  if (dirX === 0 && dirY === 0) return false;
+
+  const nextX = e.tileX + dirX;
+  const nextY = e.tileY + dirY;
+  const map = getMap();
+  const cellId = map?.[nextY]?.[nextX];
+  if (cellId !== 0) {
+    if (isDoorCell(nextX, nextY)) {
+      e.mode = 'wait';
+      e.waitTileX = nextX;
+      e.waitTileY = nextY;
+      e.waitDirX = dirX;
+      e.waitDirY = dirY;
+      requestOpenDoor(nextX, nextY);
+      e.decisionCooldownMs = 180;
+    }
+    return false;
+  }
+
+  ensureEnemyGridForCurrentMap();
+  if (enemyAt) {
+    const occ = enemyAt[enemyIndex(nextX, nextY)];
+    if (occ !== -1 && occ !== selfIndex) {
+      e.mode = 'wait';
+      e.waitTileX = nextX;
+      e.waitTileY = nextY;
+      e.waitDirX = dirX;
+      e.waitDirY = dirY;
+      e.decisionCooldownMs = 140;
+      return false;
+    }
+  }
+
+  if (enemyAt) {
+    clearEnemyFromGrid(selfIndex, e.tileX, e.tileY);
+    placeEnemyInGrid(selfIndex, nextX, nextY);
+  }
+
+  e.tileX = nextX;
+  e.tileY = nextY;
+  e.targetTileX = nextX;
+  e.targetTileY = nextY;
+  e.moveDirX = dirX;
+  e.moveDirY = dirY;
+  e.moveRemain = 1;
+  return true;
+}
+
+function pickChaseStep(selfIndex: number): { x: number; y: number } {
+  const e = enemies[selfIndex];
+  const px = Math.floor(player.x);
+  const py = Math.floor(player.y);
+  const dx = px - e.tileX;
+  const dy = py - e.tileY;
+
+  const sx = Math.sign(dx);
+  const sy = Math.sign(dy);
+
+  const primaryIsX = Math.abs(dx) >= Math.abs(dy);
+  const primary = primaryIsX ? { x: sx, y: 0 } : { x: 0, y: sy };
+  const secondary = primaryIsX ? { x: 0, y: sy } : { x: sx, y: 0 };
+  const perpA = primaryIsX ? { x: 0, y: 1 } : { x: 1, y: 0 };
+  const perpB = primaryIsX ? { x: 0, y: -1 } : { x: -1, y: 0 };
+
+  const candidates = [primary, secondary, perpA, perpB, { x: -primary.x, y: -primary.y }];
+  for (const c of candidates) {
+    if (c.x === 0 && c.y === 0) continue;
+    const tx = e.tileX + c.x;
+    const ty = e.tileY + c.y;
+    if (!isCellBlockedForEnemy(tx, ty, selfIndex)) return c;
+  }
+  return { x: 0, y: 0 };
+}
+
+function pickPatrolStep(selfIndex: number): { x: number; y: number } {
+  const e = enemies[selfIndex];
+  const dirs = [
+    { x: 1, y: 0 },
+    { x: -1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 0, y: -1 },
+  ];
+
+  const reverse = { x: -e.moveDirX, y: -e.moveDirY };
+  const preferred: Array<{ x: number; y: number }> = [];
+
+  if (e.moveDirX !== 0 || e.moveDirY !== 0) {
+    preferred.push({ x: e.moveDirX, y: e.moveDirY });
+  }
+
+  for (let i = dirs.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = dirs[i];
+    dirs[i] = dirs[j];
+    dirs[j] = tmp;
+  }
+
+  for (const d of dirs) {
+    if (d.x === reverse.x && d.y === reverse.y) continue;
+    preferred.push(d);
+  }
+
+  preferred.push(reverse);
+
+  for (const c of preferred) {
+    if (c.x === 0 && c.y === 0) continue;
+    const tx = e.tileX + c.x;
+    const ty = e.tileY + c.y;
+    if (!isCellBlockedForEnemy(tx, ty, selfIndex)) return c;
+  }
+
+  return { x: 0, y: 0 };
+}
+
 function updateEnemies(dt: number) {
   enemyDamageCooldownMs = Math.max(0, enemyDamageCooldownMs - dt * 1000);
+  updateDoors(dt);
 
   let inSightNow = false;
 
-  for (const e of enemies) {
+  for (let selfIndex = 0; selfIndex < enemies.length; selfIndex++) {
+    const e = enemies[selfIndex];
     if (!e.alive) continue;
     e.attackFlashMs = Math.max(0, e.attackFlashMs - dt * 1000);
+    e.decisionCooldownMs = Math.max(0, e.decisionCooldownMs - dt * 1000);
     const dist = Math.hypot(player.x - e.x, player.y - e.y);
+
+    if (!e.alerted) {
+      if (dist > 12) {
+        e.mode = 'idle';
+      } else if (e.mode === 'idle') {
+        e.mode = 'patrol';
+      }
+    }
 
     // Check if enemy is in your view (used for looping SFX).
     if (!inSightNow) {
@@ -226,42 +466,109 @@ function updateEnemies(dt: number) {
     if (!e.alerted) {
       if (dist < 8 && hasLineOfSight(e.x, e.y, player.x, player.y)) {
         e.alerted = true;
+        e.mode = 'chase';
+        e.decisionCooldownMs = 0;
       }
     }
 
-    if (e.alerted) {
-      const speed = 0.85;
-      const dx = player.x - e.x;
-      const dy = player.y - e.y;
-      const len = Math.hypot(dx, dy) || 1;
-      const step = speed * dt;
-      const nx = dx / len;
-      const ny = dy / len;
+    if (e.mode === 'wait') {
+      const tileCenterX = e.tileX + 0.5;
+      const tileCenterY = e.tileY + 0.5;
+      const atCenter = Math.hypot(e.x - tileCenterX, e.y - tileCenterY) < 0.05;
+      if (atCenter) {
+        e.x = tileCenterX;
+        e.y = tileCenterY;
+      }
 
-      const r = 0.24;
+      if (e.moveRemain <= 0 && atCenter && e.decisionCooldownMs <= 0) {
+        const ok = tryStepEnemy(selfIndex, e.waitDirX, e.waitDirY);
+        if (ok) {
+          e.mode = e.alerted ? 'chase' : 'patrol';
+          e.decisionCooldownMs = e.alerted ? 60 : 220;
+        } else {
+          if (isDoorCell(e.waitTileX, e.waitTileY)) requestOpenDoor(e.waitTileX, e.waitTileY);
+          e.decisionCooldownMs = 140;
+        }
+      }
+    }
 
-      // Doom-like behavior: once close enough to the player, stop and attack.
-      // Also keep a small separation so enemy never overlaps the player.
+    if (e.mode !== 'idle') {
       const stopRange = 1.05;
-      if (dist > stopRange) {
-        const xTry = e.x + nx * step;
-        const yTry = e.y + ny * step;
+      const tileCenterX = e.tileX + 0.5;
+      const tileCenterY = e.tileY + 0.5;
+      const atCenter = Math.hypot(e.x - tileCenterX, e.y - tileCenterY) < 0.05;
+      if (atCenter) {
+        e.x = tileCenterX;
+        e.y = tileCenterY;
+      }
 
-        const avoidPlayer = (x: number, y: number) => Math.hypot(x - player.x, y - player.y) < r + 0.28;
+      const wantsMove = e.mode === 'wait' ? false : e.mode === 'chase' ? dist > stopRange : true;
 
-        // Simple collision: try full move, then axis moves.
-        if (!avoidPlayer(xTry, yTry) && !hitWallCircle(xTry, yTry, r)) {
-          e.x = xTry;
-          e.y = yTry;
-        } else if (!avoidPlayer(xTry, e.y) && !hitWallCircle(xTry, e.y, r)) {
-          e.x = xTry;
-        } else if (!avoidPlayer(e.x, yTry) && !hitWallCircle(e.x, yTry, r)) {
-          e.y = yTry;
+      if (wantsMove) {
+        if (e.moveRemain <= 0 && atCenter && e.decisionCooldownMs <= 0) {
+          if (e.queuedDirX !== 0 || e.queuedDirY !== 0) {
+            const qx = e.queuedDirX;
+            const qy = e.queuedDirY;
+            e.queuedDirX = 0;
+            e.queuedDirY = 0;
+            const ok = tryStepEnemy(selfIndex, qx, qy);
+            if (!ok) {
+              e.mode = 'wait';
+              e.waitTileX = e.tileX + qx;
+              e.waitTileY = e.tileY + qy;
+              e.waitDirX = qx;
+              e.waitDirY = qy;
+              e.decisionCooldownMs = 120;
+            } else {
+              e.decisionCooldownMs = e.mode === 'chase' ? 60 : 220;
+            }
+          } else {
+            const step = e.mode === 'chase' ? pickChaseStep(selfIndex) : pickPatrolStep(selfIndex);
+            if (step.x !== 0 || step.y !== 0) {
+              const changing = step.x !== e.moveDirX || step.y !== e.moveDirY;
+              if (changing && (e.moveDirX !== 0 || e.moveDirY !== 0)) {
+                e.queuedDirX = step.x;
+                e.queuedDirY = step.y;
+                e.decisionCooldownMs = e.mode === 'chase' ? 90 : 140;
+              } else {
+                const ok = tryStepEnemy(selfIndex, step.x, step.y);
+                if (!ok) {
+                  e.mode = 'wait';
+                  e.waitTileX = e.tileX + step.x;
+                  e.waitTileY = e.tileY + step.y;
+                  e.waitDirX = step.x;
+                  e.waitDirY = step.y;
+                  e.decisionCooldownMs = 120;
+                } else {
+                  e.decisionCooldownMs = e.mode === 'chase' ? 60 : 220;
+                }
+              }
+            } else {
+              e.decisionCooldownMs = 250;
+            }
+          }
+        }
+
+        const speed = e.mode === 'chase' ? 0.95 : 0.65;
+        const move = Math.min(e.moveRemain, speed * dt);
+        if (move > 0) {
+          const targetX = e.targetTileX + 0.5;
+          const targetY = e.targetTileY + 0.5;
+          const dx = targetX - e.x;
+          const dy = targetY - e.y;
+          const len = Math.hypot(dx, dy) || 1;
+          e.x += (dx / len) * move;
+          e.y += (dy / len) * move;
+          e.moveRemain = Math.max(0, e.moveRemain - move);
         }
       }
 
-      // Damage when close and with LoS.
-      if (enemyDamageCooldownMs <= 0 && dist < 1.35 && hasLineOfSight(e.x, e.y, player.x, player.y)) {
+      if (
+        e.mode === 'chase' &&
+        enemyDamageCooldownMs <= 0 &&
+        dist < 1.35 &&
+        hasLineOfSight(e.x, e.y, player.x, player.y)
+      ) {
         const dmg = 5;
         player.hp = Math.max(0, player.hp - dmg);
         audio.playSfx('damage');
@@ -308,6 +615,13 @@ function tryShootEnemies() {
 
   if (best) {
     best.e.alive = false;
+    const i = enemies.indexOf(best.e);
+    if (i >= 0) {
+      ensureEnemyGridForCurrentMap();
+      if (enemyAt) {
+        clearEnemyFromGrid(i, best.e.tileX, best.e.tileY);
+      }
+    }
     renderer?.triggerKillFill();
   }
 }
@@ -378,8 +692,7 @@ function ensureEngine() {
     },
     events: {
       onDoorOpen: (xMap: number, yMap: number) => {
-        audio.playSfx('doorOpen');
-        trySpawnEnemyAfterDoorOpen(xMap, yMap);
+        requestOpenDoor(xMap, yMap);
       },
       onFootstep: () => {
         audio.playSfx('footstep');
@@ -387,11 +700,11 @@ function ensureEngine() {
       onShoot: () => {
         audio.playSfx('shoot');
         renderer?.triggerFlash();
+        alertEnemiesFromNoise(player.x, player.y, 9);
         tryShootEnemies();
       },
       onTick: (dt: number) => {
         updateEnemies(dt);
-        resolvePlayerEnemySeparation(dt);
       },
     },
   });
@@ -410,6 +723,8 @@ export function triggerDeathOverlay() {
 
 export function setMap(newMap: Grid) {
   ensureEngine().setMap(newMap);
+  ensureEnemyGridForCurrentMap();
+  rebuildEnemyGridFromEnemies();
 }
 
 export function setSpawn(spawn: Spawn | null) {

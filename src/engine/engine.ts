@@ -2,7 +2,6 @@ import {
   hitWall as hitWallState,
   isDoorCell,
   getCellMaterial,
-  setCell,
   setLegend as setLegendState,
   setMap as setMapState,
 } from '../state/map-state';
@@ -177,7 +176,6 @@ export function createEngine({
     const yMap = Math.floor(yProbe);
 
     if (isDoorCell(xMap, yMap)) {
-      setCell(xMap, yMap, 0);
       events?.onDoorOpen?.(xMap, yMap);
     }
   }
