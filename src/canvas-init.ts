@@ -82,9 +82,13 @@ export function getCanvasCssHeight() {
         await document.exitFullscreen();
       }
     } finally {
-      // После переключения fullscreen браузер может поменять размеры,
-      // пересчитаем canvas.
-      resizeCanvas();
+      // После переключения fullscreen браузер и CSS grid могут пересчитать размеры
+      // не сразу. Ресайзим canvas после layout (пара rAF).
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resizeCanvas();
+        });
+      });
     }
   };
 
@@ -102,6 +106,10 @@ export function getCanvasCssHeight() {
   });
 
   document.addEventListener('fullscreenchange', () => {
-    resizeCanvas();
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        resizeCanvas();
+      });
+    });
   });
 })();
