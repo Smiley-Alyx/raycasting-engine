@@ -133,11 +133,13 @@ body {
   justify-content: center;
   width: 100%;
   box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
 }
 
 .hud-face canvas {
-  width: 128px;
-  height: 92px;
+  height: 100%;
+  width: auto;
   image-rendering: pixelated;
 }
 
