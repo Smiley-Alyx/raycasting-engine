@@ -24,6 +24,7 @@ type Enemy = {
   x: number;
   y: number;
   kind: EnemyKind;
+  hp: number;
   tileX: number;
   tileY: number;
   targetTileX: number;
@@ -56,6 +57,8 @@ let healthPickups: HealthPickup[] = [];
 
 let healthFloorCandidates: Array<{ x: number; y: number }> = [];
 let healthSpawnCooldownMs = 0;
+
+let enemySightLoopKey: 'enemy' | 'zombie' | null = null;
 
 let enemyGridW = 0;
 let enemyGridH = 0;
@@ -125,10 +128,13 @@ function createEnemyAtWorld(
   const cx = tileX + 0.5;
   const cy = tileY + 0.5;
   const alerted = opts?.alerted ?? false;
+  const kind = opts?.kind ?? 'ghost';
+  const hp = kind === 'zombie' ? 1 : 2;
   return {
     x: cx,
     y: cy,
-    kind: opts?.kind ?? 'ghost',
+    kind,
+    hp,
     tileX,
     tileY,
     targetTileX: tileX,
@@ -367,8 +373,8 @@ function desiredHealthPickupCount(): number {
   const missing = Math.max(0, player.maxHp - player.hp);
   const missingRatio = player.maxHp > 0 ? missing / player.maxHp : 0;
 
-  const base = currentDifficulty === 'lost' ? 8 : currentDifficulty === 'trapped' ? 5 : 3;
-  const factor = currentDifficulty === 'lost' ? 1.35 : currentDifficulty === 'trapped' ? 1.75 : 2.15;
+  const base = currentDifficulty === 'lost' ? 12 : currentDifficulty === 'trapped' ? 8 : 5;
+  const factor = currentDifficulty === 'lost' ? 1.1 : currentDifficulty === 'trapped' ? 1.45 : 1.85;
   return Math.max(0, Math.round(base * (1 + missingRatio * factor)));
 }
 
@@ -399,7 +405,7 @@ function updateHealthSpawning(dt: number) {
     break;
   }
 
-  healthSpawnCooldownMs = currentDifficulty === 'lost' ? 2500 : currentDifficulty === 'trapped' ? 3400 : 4300;
+  healthSpawnCooldownMs = currentDifficulty === 'lost' ? 1800 : currentDifficulty === 'trapped' ? 2400 : 3100;
 }
 
 function hasLineOfSight(xFrom: number, yFrom: number, xTo: number, yTo: number): boolean {
@@ -573,6 +579,7 @@ function updateEnemies(dt: number) {
   updateDoors(dt);
 
   let inSightNow = false;
+  let sawZombieInSight = false;
 
   for (let selfIndex = 0; selfIndex < enemies.length; selfIndex++) {
     const e = enemies[selfIndex];
@@ -590,7 +597,7 @@ function updateEnemies(dt: number) {
     }
 
     // Check if enemy is in your view (used for looping SFX).
-    if (!inSightNow) {
+    if (!inSightNow || !sawZombieInSight) {
       const maxDist = 9;
       const halfAngle = (10 * Math.PI) / 180;
       if (dist <= maxDist) {
@@ -599,6 +606,7 @@ function updateEnemies(dt: number) {
         rel = Math.atan2(Math.sin(rel), Math.cos(rel));
         if (Math.abs(rel) <= halfAngle && hasLineOfSight(player.x, player.y, e.x, e.y)) {
           inSightNow = true;
+          if (e.kind === 'zombie') sawZombieInSight = true;
         }
       }
     }
@@ -723,13 +731,12 @@ function updateEnemies(dt: number) {
     }
   }
 
-  // Loop enemy sound while at least one enemy is in sight.
-  if (inSightNow && !enemyInSight) {
-    audio.playLoopingSfx('enemy', 0.35);
-  } else if (!inSightNow && enemyInSight) {
-    audio.stopLoopingSfx('enemy');
+  const desiredLoopKey: 'enemy' | 'zombie' | null = inSightNow ? (sawZombieInSight ? 'zombie' : 'enemy') : null;
+  if (desiredLoopKey !== enemySightLoopKey) {
+    if (enemySightLoopKey) audio.stopLoopingSfx(enemySightLoopKey);
+    if (desiredLoopKey) audio.playLoopingSfx(desiredLoopKey, 0.35);
+    enemySightLoopKey = desiredLoopKey;
   }
-  enemyInSight = inSightNow;
 }
 
 function tryShootEnemies() {
@@ -755,15 +762,18 @@ function tryShootEnemies() {
   }
 
   if (best) {
-    best.e.alive = false;
-    const i = enemies.indexOf(best.e);
-    if (i >= 0) {
-      ensureEnemyGridForCurrentMap();
-      if (enemyAt) {
-        clearEnemyFromGrid(i, best.e.tileX, best.e.tileY);
+    best.e.hp = Math.max(0, best.e.hp - 1);
+    if (best.e.hp <= 0) {
+      best.e.alive = false;
+      const i = enemies.indexOf(best.e);
+      if (i >= 0) {
+        ensureEnemyGridForCurrentMap();
+        if (enemyAt) {
+          clearEnemyFromGrid(i, best.e.tileX, best.e.tileY);
+        }
       }
+      renderer?.triggerKillFill();
     }
-    renderer?.triggerKillFill();
   }
 }
 
