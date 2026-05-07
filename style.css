@@ -64,7 +64,7 @@ body {
 .hud {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 120px 140px 160px 120px 140px 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
@@ -85,6 +85,8 @@ body {
   align-items: center;
   justify-items: center;
   padding: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .hud-value {
@@ -129,18 +131,22 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .hud-face canvas {
-  width: 96px;
-  height: 64px;
+  width: 128px;
+  height: 92px;
   image-rendering: pixelated;
 }
 
 .hud-weapon {
   justify-items: start;
   padding: 10px 12px;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
+  align-items: start;
+  justify-content: start;
 }
 
 .hud-weapon-title {
@@ -152,6 +158,18 @@ body {
 .hud-weapon-value {
   font-size: 18px;
   color: #d8d8d8;
+}
+
+.hud-weapon-row {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hud-weapon-row + .hud-weapon-row {
+  margin-top: 6px;
 }
 
 .blood-overlay {

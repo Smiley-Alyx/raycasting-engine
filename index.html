@@ -54,13 +54,28 @@
 
         <div class="hud" id="hudRoot">
           <div class="hud-block">
-            <div class="hud-value" id="hudAmmoValue">50</div>
-            <div class="hud-label">AMMO</div>
+            <div class="hud-value" id="hudHealthValue">100%</div>
+            <div class="hud-label">HEALTH</div>
           </div>
 
           <div class="hud-block">
-            <div class="hud-value" id="hudHealthValue">100%</div>
-            <div class="hud-label">HEALTH</div>
+            <div class="hud-value" id="hudArmorValue">0%</div>
+            <div class="hud-label">ARMOR</div>
+          </div>
+
+          <div class="hud-face">
+            <canvas id="hudPortrait" width="128" height="96"></canvas>
+          </div>
+
+          <div class="hud-block hud-weapon">
+            <div class="hud-weapon-row">
+              <div class="hud-weapon-title">WEAPON</div>
+              <div class="hud-weapon-value" id="hudWeaponValue">-</div>
+            </div>
+            <div class="hud-weapon-row">
+              <div class="hud-weapon-title">AMMO</div>
+              <div class="hud-weapon-value" id="hudAmmoValue">50</div>
+            </div>
           </div>
 
           <div class="hud-keys hud-block">
@@ -70,20 +85,6 @@
               <img class="hud-key" id="hudKeyBlood" src="images/sprites/blood_key.png" />
             </div>
             <div class="hud-label">KEYS</div>
-          </div>
-
-          <div class="hud-face">
-            <canvas id="hudPortrait" width="64" height="64"></canvas>
-          </div>
-
-          <div class="hud-block">
-            <div class="hud-value" id="hudArmorValue">0%</div>
-            <div class="hud-label">ARMOR</div>
-          </div>
-
-          <div class="hud-block hud-weapon">
-            <div class="hud-weapon-title">WEAPON</div>
-            <div class="hud-weapon-value" id="hudWeaponValue">-</div>
           </div>
         </div>
 
